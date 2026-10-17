@@ -24,6 +24,8 @@
     "test:ai-browser": "node scripts/check-ai-companion.mjs",
     "test:ai-live": "node scripts/check-ai-companion-live.mjs",
     "test:messaging": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test scripts/check-messaging-channels.test.mts",
+    "telegram:webhook:set": "node scripts/configure-telegram-webhook.mjs set",
+    "telegram:webhook:status": "node scripts/configure-telegram-webhook.mjs status",
     "test:hear": ".artifacts\\hear-venv\\Scripts\\python hear-service\\verify_model.py .artifacts\\datasets\\coughvid\\prepared\\manifest.csv",
     "test:hear-browser": "node scripts/check-hear-browser.mjs",
     "test:community": "node scripts/check-community-engagement.mjs",

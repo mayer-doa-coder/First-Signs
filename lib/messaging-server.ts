@@ -132,9 +132,19 @@ function parseStart(provider: MessagingProvider, value: string | undefined): Sta
 
   let payload: string | null = null;
   if (provider === "TELEGRAM") {
-    const match = text.match(/^\/start(?:@[A-Za-z][A-Za-z0-9_]{4,31})?(?:\s+([^\s]+))?$/i);
-    if (!match) return { kind: "none" };
-    payload = match[1]?.trim() ?? "self";
+    const commandMatch = text.match(/^\/(?:start|restart)(?:@[A-Za-z][A-Za-z0-9_]{4,31})?(?:\s+([^\s]+))?$/i);
+    const plainMatch = text.match(/^START(?:\s+(SELF|PHARMACY)(?:\s+([A-Za-z0-9_-]+))?)?$/i);
+    if (!commandMatch && !plainMatch) return { kind: "none" };
+    if (plainMatch) {
+      if (!plainMatch[1] || plainMatch[1].toUpperCase() === "SELF") {
+        return plainMatch[2] ? { kind: "invalid" } : { kind: "valid", sourceType: "SELF" };
+      }
+      const pharmacy = getActivePharmacy(plainMatch[2]);
+      return pharmacy
+        ? { kind: "valid", sourceType: "PHARMACY", pharmacyId: pharmacy.id }
+        : { kind: "invalid" };
+    }
+    payload = commandMatch?.[1]?.trim() ?? "self";
     if (payload.toLowerCase() === "self") return { kind: "valid", sourceType: "SELF" };
     const pharmacyMatch = payload.match(/^pharmacy_([A-Za-z0-9_-]+)$/i);
     if (!pharmacyMatch) return { kind: "invalid" };
@@ -168,8 +178,10 @@ function initialSession(
     patientId,
     sourceType: entry.sourceType,
     ...(entry.pharmacyId ? { pharmacyId: entry.pharmacyId } : {}),
-    language: "bn",
-    stage: "AWAITING_LANGUAGE",
+    // English is the initial language across every entry channel. Users can
+    // switch to Bangla at any point without resetting their screening.
+    language: "en",
+    stage: "AWAITING_CONSENT",
     state: { screeningId: createScreeningId() },
     version,
   };
@@ -177,11 +189,18 @@ function initialSession(
 
 function languagePrompt() {
   return [
-    "ফার্স্ট সাইনস — স্ক্রিনিং ও সেবার দিকনির্দেশনা। এটি যক্ষ্মা রোগ নির্ণয় করে না।",
-    "ভাষা বেছে নিন: 1 বাংলা  |  2 English",
     "First Signs — screening and care navigation. This does not diagnose TB.",
+    "Send ENGLISH or BANGLA to choose your language.",
+    "ফার্স্ট সাইনস — স্ক্রিনিং ও সেবার দিকনির্দেশনা। এটি যক্ষ্মা রোগ নির্ণয় করে না।",
     `Website backup: ${absoluteWebLink("/screen?source=self")}`,
   ].join("\n\n");
+}
+
+function languageChangedPrompt(language: ChannelLanguage) {
+  return textFor(language, {
+    bn: "ভাষা বাংলা করা হয়েছে। বর্তমান প্রশ্নের উত্তর দিন, অথবা LANGUAGE লিখে আবার ভাষা বদলান।",
+    en: "Language changed to English. Reply to the current question, or send LANGUAGE to change it again.",
+  });
 }
 
 function invalidEntryPrompt() {
@@ -496,6 +515,28 @@ async function saveBarrier(session: ChannelSession, barrier: FollowUpBarrier) {
 async function processTurn(session: ChannelSession, event: IncomingChannelEvent) {
   const rawText = event.text?.trim().slice(0, 500) ?? "";
   const command = rawText.toUpperCase();
+  if (command === "LANGUAGE" || command === "/LANGUAGE" || command === "ভাষা") {
+    return { session, response: languagePrompt(), changed: false };
+  }
+  if (session.stage !== "AWAITING_LANGUAGE" && command === "ENGLISH") {
+    session.language = "en";
+    return { session, response: languageChangedPrompt(session.language), changed: true };
+  }
+  if (session.stage !== "AWAITING_LANGUAGE" && (command === "BANGLA" || command === "বাংলা")) {
+    session.language = "bn";
+    return { session, response: languageChangedPrompt(session.language), changed: true };
+  }
+  if (command === "STOP" || command === "/STOP") {
+    session.stage = "STOPPED";
+    return {
+      session,
+      response: textFor(session.language, {
+        bn: "স্ক্রিনিং থামানো হয়েছে। আবার শুরু করতে /start বা START SELF লিখুন।",
+        en: "Screening stopped. Send /start or START SELF to begin again.",
+      }),
+      changed: true,
+    };
+  }
   if (command === "STATUS" || command === "CARE" || command === "আমার সেবা") {
     return { session, response: await careStatusResponse(session), changed: false };
   }
@@ -507,8 +548,8 @@ async function processTurn(session: ChannelSession, event: IncomingChannelEvent)
   let response: string;
   switch (session.stage) {
     case "AWAITING_LANGUAGE": {
-      if (rawText === "2" || rawText.toLowerCase() === "english") session.language = "en";
-      else if (rawText === "1" || rawText === "বাংলা" || rawText.toLowerCase() === "bangla") session.language = "bn";
+      if (rawText === "1" || rawText.toLowerCase() === "english") session.language = "en";
+      else if (rawText === "2" || rawText === "বাংলা" || rawText.toLowerCase() === "bangla") session.language = "bn";
       else return { session, response: languagePrompt(), changed: false };
       session.stage = "AWAITING_CONSENT";
       response = consentPrompt(session);
@@ -572,7 +613,7 @@ async function processTurn(session: ChannelSession, event: IncomingChannelEvent)
       const index = Number(normalizeBanglaDigits(rawText)) - 1;
       const area = screeningAreas[index];
       if (!area) return { session, response: textFor(session.language, {
-        bn: "তালিকা থেকে 1–5 লিখুন।", en: "Send a number from 1–5.",
+        bn: `তালিকা থেকে 1–${screeningAreas.length} লিখুন।`, en: `Send a number from 1–${screeningAreas.length}.`,
       }), changed: false };
       session.state.areaName = area.id;
       session.stage = "AUDIO";
@@ -639,7 +680,12 @@ async function processTurn(session: ChannelSession, event: IncomingChannelEvent)
             : acousticResult.signal === "NO_COUGH_LIKE_SIGNAL_DETECTED"
               ? { bn: "পরীক্ষামূলক HeAR বিশ্লেষণে কাশির মতো সংকেত পাওয়া যায়নি। এটি যক্ষ্মা রোগ নির্ণয় নয় এবং উপসর্গভিত্তিক নিরাপত্তা ফলাফল বদলায় না।", en: "Experimental HeAR analysis did not find a cough-like signal. This is not a TB diagnosis and does not change the symptom-based safety result." }
               : { bn: "পরীক্ষামূলক HeAR বিশ্লেষণের ফল অনির্দিষ্ট। উপসর্গভিত্তিক নিরাপত্তা ফলাফল অপরিবর্তিত থাকবে।", en: "The experimental HeAR analysis was inconclusive. The symptom-based safety result remains unchanged." }
-          : { bn: "অ্যাকুস্টিক প্রক্রিয়াকরণ সম্পন্ন হয়নি। পরামর্শ নির্দিষ্ট উপসর্গভিত্তিক স্ক্রিনিংয়ের ওপর ভিত্তি করে দেওয়া হয়েছে।", en: "Acoustic processing could not be completed. The recommendation is based on the fixed symptom screening." };
+          : { bn: "পরীক্ষামূলক অডিও প্রক্রিয়াকরণ এখন পাওয়া যাচ্ছে না। পরামর্শ নির্দিষ্ট উপসর্গভিত্তিক স্ক্রিনিংয়ের ওপর ভিত্তি করে দেওয়া হয়েছে।", en: "Experimental audio processing is currently unavailable. The recommendation is based on the fixed symptom screening." };
+        if (!acousticResult?.available) {
+          // The reason is a fixed operational code only; never log a chat ID,
+          // provider file ID, URL, audio content, or credentials.
+          console.warn(`[First Signs channel audio] HeAR unavailable: ${acousticResult?.reason ?? "NOT_REQUESTED"}`);
+        }
         response = `${textFor(session.language, audioMessage)}\n\n${response}`;
       }
       break;
@@ -719,9 +765,9 @@ export async function handleChannelEvent(event: IncomingChannelEvent): Promise<C
         session.version,
       );
       session = await saveSession(reset);
-      response = languagePrompt();
+      response = consentPrompt(session);
     } else if (sessionWasCreated) {
-      response = languagePrompt();
+      response = consentPrompt(session);
     } else {
       const turn = await processTurn(session, event);
       if (turn.changed) session = await saveSession(turn.session);

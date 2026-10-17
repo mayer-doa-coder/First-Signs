@@ -988,6 +988,25 @@ Implementation boundary:
 - require a public HTTPS application URL for provider callbacks; local/LAN URLs remain website-only,
 - keep provider setup external: Meta and Telegram credentials are never committed to the repository.
 
+### Telegram webhook setup
+
+Telegram does not create the webhook secret for you. Generate a random URL-safe value, save the exact same value as `TELEGRAM_WEBHOOK_SECRET` in both `.env.local` and Render, then register it with Telegram. Telegram adds that value to each delivery as the `X-Telegram-Bot-Api-Secret-Token` header; the application rejects a request when it does not match.
+
+Use this PowerShell command locally to generate a valid secret without printing any existing credentials:
+
+```powershell
+$bytes = [byte[]]::new(32); [Security.Cryptography.RandomNumberGenerator]::Fill($bytes); [Convert]::ToBase64String($bytes).TrimEnd('=').Replace('+','-').Replace('/','_')
+```
+
+Set `APP_URL` (or `NEXT_PUBLIC_APP_URL`) to the public HTTPS Render origin, then run these commands from the project directory after the Render deployment is live:
+
+```powershell
+npm run telegram:webhook:set
+npm run telegram:webhook:status
+```
+
+The setup command registers only `message` updates at `https://<public-host>/api/channels/telegram`; it does not discard pending updates. It never prints a bot token or webhook secret. The status command reports the endpoint host/path, pending update count, and Telegram's last delivery error. During a rotation, deploy the new `TELEGRAM_WEBHOOK_SECRET`, retain the previous value temporarily as `TELEGRAM_WEBHOOK_SECRET_PREVIOUS`, run the setup command with the new secret, verify status, then remove the previous value in a later deployment.
+
 ---
 
 # Part 17 — Add Real HeAR Only If Needed

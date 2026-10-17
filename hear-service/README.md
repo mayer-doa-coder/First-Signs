@@ -22,6 +22,24 @@ $env:HEAR_SERVICE_TOKEN = "use-a-private-random-value"
 
 Configure Next.js with the matching `HEAR_SERVICE_TOKEN` and `HEAR_SERVICE_URL=http://127.0.0.1:8017`. Audio is decoded and processed in memory; raw audio and embeddings are not stored.
 
+## Render production deployment
+
+The Next.js web service cannot run this Python process on `127.0.0.1`. Deploy this directory as a **separate Render Docker Web Service**, with the repository root as its Docker build context and `hear-service/Dockerfile` as its Dockerfile path. Use a persistent disk mounted at `/var/lib/first-signs-hear`; the service downloads the approved model there only when it is missing.
+
+Set these server-only variables on the separate service:
+
+- `HEAR_SERVICE_TOKEN`: a private random value.
+- `HF_TOKEN`: a Hugging Face read token if the account needs one to download `google/hear`; accept the model's access terms first when required.
+- `HEAR_MODEL_PATH=/var/lib/first-signs-hear/model`
+- `HEAR_CLASSIFIER_PATH=/app/hear_service/model/cough_classifier.json`
+
+After that service reports `GET /health` as `{"status":"ready"}`, set these on the Next.js Render service and redeploy it:
+
+- `HEAR_SERVICE_URL=https://<your-hear-service>.onrender.com`
+- `HEAR_SERVICE_TOKEN`: exactly the same private value used by the HeAR service.
+
+Do not use `http://127.0.0.1:8017` or `localhost` in the production Next.js service. Those addresses only work when both processes run on the same machine locally.
+
 Prepare and train the versioned downstream head:
 
 ```powershell

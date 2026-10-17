@@ -28,6 +28,23 @@ function validHttpUrl(value: string | undefined) {
   }
 }
 
+function validHearServiceUrl(value: string | undefined, environment: Environment) {
+  if (!validHttpUrl(value)) return false;
+  const hostname = new URL(value!).hostname.toLowerCase();
+  const isLoopback = hostname === "localhost"
+    || hostname === "::1"
+    || hostname === "127.0.0.1"
+    || hostname === "0.0.0.0";
+  // A Render/production Next.js service does not run the Python model server
+  // on its loopback interface. Requiring a separate reachable service avoids
+  // silently falling back for every uploaded voice message.
+  return environment.NODE_ENV !== "production" || !isLoopback;
+}
+
+function validTelegramWebhookSecret(value: string | undefined) {
+  return Boolean(value && /^[A-Za-z0-9_-]{1,256}$/.test(value));
+}
+
 function integration(
   id: string,
   label: string,
@@ -59,7 +76,7 @@ export function inspectServerConfiguration(
 
   const publicAppUrl = environment.APP_URL ?? environment.NEXT_PUBLIC_APP_URL;
   const hasPublicAppUrl = validHttpUrl(publicAppUrl);
-  const hasHearUrl = validHttpUrl(environment.HEAR_SERVICE_URL);
+  const hasHearUrl = validHearServiceUrl(environment.HEAR_SERVICE_URL, environment);
   const hasHearToken = configured(environment, "HEAR_SERVICE_TOKEN");
   const hasWhatsAppVariables = [
     "WHATSAPP_ACCESS_TOKEN",
@@ -69,11 +86,9 @@ export function inspectServerConfiguration(
     "WHATSAPP_GRAPH_VERSION",
     "MESSAGING_ID_SECRET",
   ].every((name) => configured(environment, name));
-  const hasTelegramVariables = [
-    "TELEGRAM_BOT_TOKEN",
-    "TELEGRAM_WEBHOOK_SECRET",
-    "MESSAGING_ID_SECRET",
-  ].every((name) => configured(environment, name));
+  const hasTelegramVariables = configured(environment, "TELEGRAM_BOT_TOKEN")
+    && validTelegramWebhookSecret(environment.TELEGRAM_WEBHOOK_SECRET)
+    && configured(environment, "MESSAGING_ID_SECRET");
 
   const optional: ConfigurationIssue[] = [
     integration(

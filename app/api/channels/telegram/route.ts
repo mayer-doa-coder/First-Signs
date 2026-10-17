@@ -6,12 +6,27 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const responseHeaders = { "cache-control": "no-store", "referrer-policy": "no-referrer" };
+const maximumPayloadBytes = 256 * 1024;
+
+function isWebhookSecret(value: string) {
+  return /^[A-Za-z0-9_-]{1,256}$/.test(value);
+}
+
+function hasValidWebhookSecret(supplied: string) {
+  const current = process.env.TELEGRAM_WEBHOOK_SECRET ?? "";
+  const previous = process.env.TELEGRAM_WEBHOOK_SECRET_PREVIOUS ?? "";
+  return (isWebhookSecret(current) && constantTimeEqual(supplied, current))
+    || (isWebhookSecret(previous) && constantTimeEqual(supplied, previous));
+}
 
 export async function POST(request: Request) {
-  const expected = process.env.TELEGRAM_WEBHOOK_SECRET ?? "";
   const supplied = request.headers.get("x-telegram-bot-api-secret-token") ?? "";
-  if (!expected || !constantTimeEqual(supplied, expected)) {
+  if (!hasValidWebhookSecret(supplied)) {
     return NextResponse.json({ error: "INVALID_WEBHOOK_SECRET" }, { status: 401, headers: responseHeaders });
+  }
+  const contentLength = Number(request.headers.get("content-length") ?? "0");
+  if (!Number.isFinite(contentLength) || contentLength > maximumPayloadBytes) {
+    return NextResponse.json({ error: "PAYLOAD_TOO_LARGE" }, { status: 413, headers: responseHeaders });
   }
   let payload: unknown;
   try {
