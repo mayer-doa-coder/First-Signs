@@ -1,0 +1,53 @@
+{
+  "name": "first-signs",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "postinstall": "node scripts/copy-maplibre-worker.mjs",
+    "dev": "next dev --hostname 0.0.0.0",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "check:config": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-server-configuration.mts",
+    "test:config": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test scripts/check-server-configuration.test.mts",
+    "test:entries": "node scripts/check-entry-paths.mjs",
+    "test:safety": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test scripts/check-safety-rules.test.mts",
+    "test:care": "node scripts/check-care-companion.mjs",
+    "test:care-persistence": "node scripts/check-persisted-care.mjs",
+    "test:finder": "node scripts/check-tb-centre-finder.mjs",
+    "test:referral": "node scripts/check-referral-flow.mjs",
+    "test:verify": "node scripts/check-verification-flow.mjs",
+    "test:pharmacy": "node scripts/check-pharmacy-dashboard.mjs",
+    "test:dashboard": "node scripts/check-government-dashboard.mjs",
+    "test:fraud-hash": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test scripts/check-part14-audio-hash.test.mts",
+    "test:ai": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test scripts/check-ai-companion.test.mts",
+    "test:ai-browser": "node scripts/check-ai-companion.mjs",
+    "test:ai-live": "node scripts/check-ai-companion-live.mjs",
+    "test:messaging": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test scripts/check-messaging-channels.test.mts",
+    "test:hear": ".artifacts\\hear-venv\\Scripts\\python hear-service\\verify_model.py .artifacts\\datasets\\coughvid\\prepared\\manifest.csv",
+    "test:hear-browser": "node scripts/check-hear-browser.mjs",
+    "test:community": "node scripts/check-community-engagement.mjs",
+    "test:integration": "node scripts/check-parts-1-12-integration.mjs",
+    "demo:record": "node scripts/record-part19-demo.mjs",
+    "test:final": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-final-quality.ps1"
+  },
+  "dependencies": {
+    "maplibre-gl": "^6.9.0",
+    "next": "16.3.8",
+    "qrcode": "^1.5.4",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "16.3.8",
+    "jsqr": "^1.4.0",
+    "playwright-core": "1.63.0",
+    "pngjs": "^7.0.0",
+    "typescript": "^5.9.0"
+  }
+}
