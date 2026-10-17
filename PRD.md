@@ -54,6 +54,8 @@ The UI must consistently implement the observable component patterns verified on
 - restrained floating, reveal, and hover motion,
 - responsive compositions that preserve the same hierarchy on mobile.
 
+Healthcare-specific component patterns may be adapted from verified 21st.dev and Framer healthcare examples only when they express an existing First Signs requirement. Approved examples are clinical trust/status cards, care-pathway steps, safety reassurance panels, facility discovery, and readable health metrics. Do not add fictional doctors, appointments, testimonials, clinical claims, or services. Use Motion for React for interruptible spring-based route and state transitions, scroll progress, and reduced-motion-aware animation.
+
 Use project-owned HTML and CSS for these patterns. Do not copy Letters branding, proprietary source code, product copy, or unavailable assets. The approved Merriweather and Noto Sans Bengali typography and all original healthcare and safety content remain mandatory.
 
 ## 4. Why This Makes Sense in Bangladesh

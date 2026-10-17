@@ -36,6 +36,33 @@ export default async function HomePage() {
         </ClayCard>
       </section>
 
+      <section className="medical-trust-strip container" aria-label="Clinical trust and safety">
+        <article className="medical-trust-card">
+          <IconTile icon="shield" tone="blue" />
+          <div>
+            <span className="mini-label"><BilingualText copy={{ bn: "নিরাপত্তার সীমা", en: "Safety boundary" }} /></span>
+            <strong><BilingualText copy={{ bn: "স্ক্রিনিং—রোগ নির্ণয় নয়", en: "Screening, not diagnosis" }} /></strong>
+          </div>
+          <span className="medical-pulse" aria-hidden="true"><i /><i /><i /><i /><i /></span>
+        </article>
+        <article className="medical-trust-card">
+          <IconTile icon="screen" tone="blue" />
+          <div>
+            <span className="mini-label"><BilingualText copy={{ bn: "ক্লিনিক্যাল যুক্তি", en: "Clinical logic" }} /></span>
+            <strong><BilingualText copy={{ bn: "নির্দিষ্ট নিরাপত্তা নিয়ম", en: "Fixed safety rules" }} /></strong>
+          </div>
+          <span className="medical-pulse medical-pulse-steady" aria-hidden="true"><i /><i /><i /><i /><i /></span>
+        </article>
+        <article className="medical-trust-card">
+          <IconTile icon="location" tone="blue" />
+          <div>
+            <span className="mini-label"><BilingualText copy={{ bn: "সেবার পরিধি", en: "Care reach" }} /></span>
+            <strong><BilingualText copy={{ bn: "বাংলাদেশের ৮ বিভাগ", en: "All 8 divisions" }} /></strong>
+          </div>
+          <span className="medical-pulse medical-pulse-wide" aria-hidden="true"><i /><i /><i /><i /><i /></span>
+        </article>
+      </section>
+
       <section className="container section-block" aria-labelledby="messaging-entry-title">
         <ClayCard className="access-card messaging-entry-card">
           <IconTile icon="screen" tone="blue" />

@@ -32,6 +32,8 @@ Copy `.env.example` to `.env.local` for local development, replace placeholders,
 
 Use the observable component system verified on `https://letters.app/` and `https://www.awwwards.com/sites/letters#elements`: pale-blue rounded shells, white navigation, oversized centered hero copy, black pill actions, white pill controls, soft-gray bento cards, compact labels, generous whitespace, and restrained floating/reveal motion. Recreate these patterns with project-owned HTML/CSS; do not copy Letters branding, proprietary source, product copy, or unavailable assets. Apply the patterns consistently to every route and state, with a complete mobile composition and a `prefers-reduced-motion` fallback. Keep Merriweather and Noto Sans Bengali unchanged.
 
+Use healthcare-specific 21st.dev and Framer patterns for clinical trust/status cards, safety reassurance, care pathways, facility discovery, and readable health metrics. Adapt only the component structure and interaction pattern; retain First Signs content, tokens, and fonts, and do not introduce fictional clinicians, appointments, testimonials, or claims. Use the public `motion` package for spring-smoothed route transitions and scroll feedback. Every animation must honor the operating-system reduced-motion preference and must never delay an urgent action or hide safety-critical information.
+
 The product supports two ways to enter:
 
 1. **Self-use:** a person can use First Signs from home or anywhere using their own phone.
