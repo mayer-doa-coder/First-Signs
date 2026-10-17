@@ -1,0 +1,7 @@
+tensorflow-cpu==2.20.0
+numpy==2.4.6
+scikit-learn==1.7.2
+av==16.0.1
+fastapi==0.119.0
+uvicorn==0.38.0
+python-multipart==0.0.20
