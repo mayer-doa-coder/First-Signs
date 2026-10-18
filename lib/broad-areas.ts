@@ -14,7 +14,7 @@ export type BroadArea = {
    * "Safety Rules" and IMPLEMENTATION_GUIDE.md Step 11 both require this).
    *
    * Nationwide division centroids are coarse public map coordinates checked
-   * against OpenStreetMap/Nominatim on 17 October 2026. Legacy Khulna demo
+   * against OpenStreetMap/Nominatim. Legacy Khulna demo
    * areas remain available only so persisted records and the seeded hotspot
    * rehearsal continue to render correctly.
    */

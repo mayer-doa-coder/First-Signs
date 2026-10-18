@@ -19,8 +19,8 @@ const confirmTesting: Copy = {
 
 /**
  * Nationwide government referral hospitals. Facility identity and map
- * coordinates were cross-checked against OpenStreetMap/Nominatim on
- * 17 October 2026. Specific diagnostic availability can change, so the UI
+ * coordinates were cross-checked against OpenStreetMap/Nominatim. Specific
+ * diagnostic availability can change, so the UI
  * deliberately asks the person to confirm the available test before travel.
  * The existing Khulna entries below retain their NTP-listed microscopy data.
  */

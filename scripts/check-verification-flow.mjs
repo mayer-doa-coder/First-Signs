@@ -141,7 +141,7 @@ expectingNotFound = true;
 await lookupInUi(page, "JVH-KHU-99999");
 await page.locator(".verify-error").waitFor({ state: "visible" });
 check(
-  nfc(await page.locator(".verify-error").textContent())?.includes(nfc("পাওয়া যায়নি")),
+  nfc(await page.locator(".verify-error").textContent())?.includes("was not found"),
   "An unknown referral ID did not report that it was not found",
 );
 check((await page.locator("[data-verification-result]").count()) === 0, "An unknown referral still rendered a result card");
@@ -150,7 +150,7 @@ check((await page.locator("[data-verification-result]").count()) === 0, "An unkn
 await lookupInUi(page, "NOT-A-REFERRAL");
 await page.locator(".verify-error").waitFor({ state: "visible" });
 check(
-  nfc(await page.locator(".verify-error").textContent())?.includes(nfc("সঠিক রেফারেল আইডি")),
+  nfc(await page.locator(".verify-error").textContent())?.includes("Enter a valid referral ID"),
   "A malformed referral value was not rejected with guidance",
 );
 
@@ -161,11 +161,11 @@ await lookupInUi(page, pharmacyReferral.referralId);
 await waitForResult(page, pharmacyReferral.referralId);
 const resultText = () => page.locator("[data-verification-result]").textContent().then(nfc);
 check((await resultText())?.includes(pharmacyReferral.referralId), "The result card does not show the referral ID");
-check((await resultText())?.includes(nfc("অপেক্ষমাণ")), "A pending referral is not shown as pending");
-check((await resultText())?.includes(nfc("খুলনা মেডিকেল কলেজ হাসপাতাল")), "The intended TB centre is not shown");
-check((await resultText())?.includes(nfc("মাইক্রোস্কপি")), "The centre's listed service is not shown");
+check((await resultText())?.includes("Pending"), "A pending referral is not shown as pending");
+check((await resultText())?.includes("Khulna Medical College Hospital"), "The intended TB centre is not shown");
+check((await resultText())?.includes("Microscopy"), "The centre's listed service is not shown");
 check(
-  (await page.locator("[data-verification-result] dd").filter({ hasText: /^না$/ }).count()) > 0,
+  (await page.locator("[data-verification-result] dd").filter({ hasText: /^No$/ }).count()) > 0,
   "The result card does not report that the code has not been used yet",
 );
 check(
@@ -189,17 +189,13 @@ check(
 await page.locator("[data-confirm-evaluation]").click();
 await page.locator(".verification-confirmed").waitFor({ state: "visible" });
 check(
-  (await resultText())?.includes(nfc("আনুষ্ঠানিক মূল্যায়নে উপস্থিতি নিশ্চিত হয়েছে")),
+  (await resultText())?.includes("Formal evaluation attendance confirmed"),
   "Confirming did not show the attendance-confirmed message",
 );
-check((await resultText())?.includes(nfc("সম্পন্ন")), "The referral is not shown as completed after confirmation");
+check((await resultText())?.includes("Completed"), "The referral is not shown as completed after confirmation");
 check(
-  (await page.locator("[data-verification-result] dd").filter({ hasText: /^হ্যাঁ$/ }).count()) > 0,
+  (await page.locator("[data-verification-result] dd").filter({ hasText: /^Yes$/ }).count()) > 0,
   "The confirmed referral is not marked as used",
-);
-check(
-  (await resultText())?.includes(nfc("উপস্থিতি নিশ্চিতের সময়")),
-  "The completion time is not shown after confirmation",
 );
 check((await page.locator("[data-confirm-evaluation]").count()) === 0, "The confirm action is still offered after use");
 // The confirm button unmounts on success, so focus must be moved deliberately
@@ -209,7 +205,7 @@ check(
   "Confirming dropped keyboard focus instead of moving it to the confirmation",
 );
 check(
-  (await resultText())?.includes(nfc("যক্ষ্মা রোগ নির্ণয় বা পরীক্ষার ফল নয়")),
+  (await resultText())?.includes("not a TB diagnosis or test result"),
   "The confirmation does not state that it is not a diagnosis or test result",
 );
 
@@ -287,22 +283,22 @@ const foreignQr = await QRCode.toBuffer("https://example.org/not-a-referral", { 
 await page.locator(".verify-scan-actions input[type=file]").setInputFiles({ name: "other-qr.png", mimeType: "image/png", buffer: foreignQr });
 await page.locator(".verify-warning").first().waitFor({ state: "visible" });
 check(
-  nfc(await page.locator(".verify-warning").first().textContent())?.includes(nfc("সঠিক রেফারেল কিউআর নয়")),
+  nfc(await page.locator(".verify-warning").first().textContent())?.includes("not a valid referral QR"),
   "A non-referral QR image was not reported clearly",
 );
 
-// --- English parity on the verification workspace ---
+// --- Bangla parity on the verification workspace ---
 await lookupInUi(page, pharmacyReferral.referralId);
 await waitForResult(page, pharmacyReferral.referralId);
 await page.locator(".verification-confirmed").waitFor({ state: "visible" });
-await page.getByRole("button", { name: "English" }).click();
-check(await page.getByText("Formal evaluation attendance confirmed.").first().isVisible(), "English confirmation message is missing");
-check(await page.getByText("Intended TB centre").first().isVisible(), "English intended-centre label is missing");
+await page.getByRole("button", { name: "বাংলা" }).click();
+check(await page.getByText("আনুষ্ঠানিক মূল্যায়নে উপস্থিতি নিশ্চিত হয়েছে।").first().isVisible(), "Bangla confirmation message is missing");
+check(await page.getByText("নির্ধারিত যক্ষ্মা সেবাকেন্দ্র").first().isVisible(), "Bangla intended-centre label is missing");
 check(
-  await page.getByText(/not a TB diagnosis or test result/i).first().isVisible(),
-  "English non-diagnosis wording is missing on the verification page",
+  await page.getByText(/যক্ষ্মা রোগ নির্ণয় বা পরীক্ষার ফল নয়/i).first().isVisible(),
+  "Bangla non-diagnosis wording is missing on the verification page",
 );
-await noOverflow(page, "English mobile verification result");
+await noOverflow(page, "Bangla mobile verification result");
 await page.close();
 
 // --- Step 35: the patient's companion shows the confirmation ---
@@ -347,33 +343,33 @@ await carePage.reload({ waitUntil: "networkidle" });
 await carePage.locator("[data-attendance-confirmed]").waitFor({ state: "visible", timeout: 15_000 });
 const attendanceText = nfc(await carePage.locator("[data-attendance-confirmed]").textContent());
 check(
-  attendanceText?.includes(nfc("আনুষ্ঠানিক মূল্যায়নে উপস্থিতি নিশ্চিত হয়েছে")),
+  attendanceText?.includes("Formal evaluation attendance confirmed"),
   "My Care does not show the Step 35 attendance-confirmed message",
 );
 check(
-  attendanceText?.includes(nfc("যক্ষ্মা রোগ নির্ণয় বা পরীক্ষার ফল নয়")),
+  attendanceText?.includes("not a TB diagnosis or test result"),
   "My Care presents attendance confirmation without the non-diagnosis explanation",
 );
 check(
-  attendanceText?.match(/জিনএক্সপার্ট|মাইক্রোস্কপি|এক্স-রে/),
+  attendanceText?.match(/GeneXpert|microscopy|X-ray/i),
   "My Care does not explain what formal evaluation at the centre may involve",
 );
 check(
-  attendanceText?.includes(nfc("কফের নমুনা")),
+  attendanceText?.includes("sputum"),
   "My Care does not tell the person a sputum sample is usually requested",
 );
 check(
-  attendanceText?.includes(nfc("ফল জানতে")),
+  attendanceText?.includes("get your result"),
   "My Care does not tell the person to return for the result",
 );
 // Cost must be hedged: the NTP's own strategic plan records user fees for
 // chest X-ray, so the app may not promise that every test is free.
 check(
-  attendanceText?.includes(nfc("বিনামূল্যে")) && attendanceText?.includes(nfc("ফি লাগতে পারে")),
+  attendanceText?.includes("provided free") && attendanceText?.includes("may charge a fee"),
   "My Care does not state both that programme services are free and that some tests may still charge a fee",
 );
 check(
-  nfc(await carePage.locator('[data-summary="referral"]').textContent())?.includes(nfc("সম্পন্ন")),
+  nfc(await carePage.locator('[data-summary="referral"]').textContent())?.includes("Completed"),
   "The care summary does not show the completed referral status",
 );
 check(
@@ -385,14 +381,14 @@ await noOverflow(carePage, "Mobile My Care after verification");
 await carePage.locator('[data-action="check-referral"]').click();
 await carePage.locator("[data-care-feedback]").waitFor({ state: "visible" });
 check(
-  nfc(await carePage.locator("[data-care-feedback]").textContent())?.includes(nfc("উপস্থিতি নিশ্চিত হয়েছে")),
+  nfc(await carePage.locator("[data-care-feedback]").textContent())?.includes("Formal evaluation attendance confirmed"),
   "Checking referral status after verification does not report the confirmation",
 );
 
-await carePage.getByRole("button", { name: "English" }).click();
+await carePage.getByRole("button", { name: "বাংলা" }).click();
 check(
-  await carePage.getByText("Formal evaluation attendance confirmed.").first().isVisible(),
-  "English Step 35 wording is missing on My Care",
+  await carePage.getByText("আনুষ্ঠানিক মূল্যায়নে উপস্থিতি নিশ্চিত হয়েছে।").first().isVisible(),
+  "Bangla Step 35 wording is missing on My Care",
 );
 await carePage.close();
 

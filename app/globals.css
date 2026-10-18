@@ -249,8 +249,9 @@ p { color: var(--color-ink-soft); }
 .medicine-result-count { margin: var(--space-2) 0 0; font-weight: 800; color: var(--color-primary-hover); }
 .medicine-grid { display: grid; gap: var(--space-4); }
 .medicine-card { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
-.medicine-card-heading { display: flex; align-items: flex-start; gap: var(--space-3); }
-.medicine-card-heading h3 { margin: 0 0 var(--space-2); font-size: 1.35rem; }
+.medicine-card-heading { display: flex; align-items: flex-start; gap: var(--space-3); min-width: 0; }
+.medicine-card-heading > div { min-width: 0; }
+.medicine-card-heading h3 { margin: 0 0 var(--space-2); overflow-wrap: anywhere; font-size: 1.35rem; }
 .medicine-symbol { display: grid; place-items: center; flex: 0 0 2.8rem; width: 2.8rem; height: 2.8rem; border: 1px solid #9dc4d9; border-radius: var(--radius-md); background: var(--color-blue-soft); color: var(--color-primary-hover); }
 .medicine-symbol svg { width: 1.35rem; height: 1.35rem; }
 .medicine-card-section { padding-top: var(--space-3); border-top: 1px solid var(--color-border); }
@@ -1145,7 +1146,8 @@ body {
 .account-auth-card, .account-profile-card { max-width: 46rem; }
 .account-auth-card form, .account-form { display: grid; gap: var(--space-3); margin-top: var(--space-4); }
 .account-auth-card label, .account-form label { display: grid; gap: .45rem; font-weight: 700; }
-.account-auth-card input, .account-form input, .account-form select { min-height: 3rem; padding: .65rem .8rem; border: 1px solid #acc6d2; border-radius: .75rem; color: var(--color-ink); background: white; font: inherit; }
+.account-auth-card input, .account-form input, .account-form select, .account-form textarea { width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; min-height: 3rem; padding: .65rem .8rem; border: 1px solid #acc6d2; border-radius: .75rem; color: var(--color-ink); background: white; font: inherit; }
+.account-form textarea { min-height: 7rem; resize: vertical; }
 .account-form .check-row { display: flex; align-items: center; }
 .account-form .check-row input { min-height: auto; }
 .account-reminder { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); padding-block: var(--space-3); border-top: 1px solid rgba(23,51,68,.12); }

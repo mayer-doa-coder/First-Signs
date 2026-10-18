@@ -31,16 +31,6 @@ function statusTone(status: ReferralStatus) {
   return "neutral" as const;
 }
 
-function formatMoment(value: string | null, language: "bn" | "en") {
-  if (!value) return "";
-  const moment = new Date(value);
-  if (Number.isNaN(moment.getTime())) return "";
-  return new Intl.DateTimeFormat(language === "bn" ? "bn-BD" : "en-GB", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(moment);
-}
-
 export function ReferralVerification() {
   const { language } = useLanguage();
   const [manualValue, setManualValue] = useState("");
@@ -262,7 +252,6 @@ export function ReferralVerification() {
   const centreArea = centre?.area[language] ?? referral?.centreArea;
   const centreDistrict = centre?.district[language] ?? referral?.centreDistrict;
   const serviceType = centre?.serviceType[language] ?? referral?.serviceType;
-  const completedAt = formatMoment(referral?.completedAt ?? null, language);
   const canConfirm = referral && !referral.codeUsed && (referral.status === "PENDING" || referral.status === "FOLLOW_UP");
 
   return (
@@ -398,7 +387,6 @@ export function ReferralVerification() {
               <div><dt><BilingualText copy={{ bn: "নির্ধারিত যক্ষ্মা সেবাকেন্দ্র", en: "Intended TB centre" }} /></dt><dd>{centreName}</dd></div>
               <div><dt><BilingualText copy={{ bn: "অবস্থান", en: "Location" }} /></dt><dd>{centreArea} · {centreDistrict}</dd></div>
               <div><dt><BilingualText copy={{ bn: "তালিকাভুক্ত সেবা", en: "Listed service" }} /></dt><dd>{serviceType}</dd></div>
-              {completedAt && <div><dt><BilingualText copy={{ bn: "উপস্থিতি নিশ্চিতের সময়", en: "Attendance confirmed" }} /></dt><dd>{completedAt}</dd></div>}
             </dl>
             <div className="verification-action-panel">
               {canConfirm ? (

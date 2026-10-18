@@ -21,15 +21,6 @@ function formatRate(value: number, language: "bn" | "en") {
   }).format(value)}%`;
 }
 
-function formatDate(value: string, language: "bn" | "en") {
-  return new Intl.DateTimeFormat(language === "bn" ? "bn-BD" : "en-BD", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    timeZone: "Asia/Dhaka",
-  }).format(new Date(value));
-}
-
 function FunnelStage({
   icon,
   label,
@@ -203,10 +194,6 @@ export function GovernmentDashboard() {
                   bn: "স্বতন্ত্র রেফার করা ব্যবহারকারী ৩ জনের কম হলে স্বাভাবিক, ৩–৪ জন হলে নজরে রাখুন, এবং ৫ বা বেশি হলে লাল সতর্কতা। এটি চিকিৎসাবিষয়ক বা সরকার-অনুমোদিত সীমা নয়।",
                   en: "Fewer than 3 independent referred users is normal, 3–4 is watch, and 5 or more is a red warning. This is not a medical or government-approved threshold.",
                 }} /></p>
-                <small><BilingualText copy={{
-                  bn: `${formatDate(dashboard.demoWindowStart, "bn")}–${formatDate(dashboard.demoWindowEnd, "bn")} ডেমো সময়সীমা`,
-                  en: `${formatDate(dashboard.demoWindowStart, "en")}–${formatDate(dashboard.demoWindowEnd, "en")} demo window`,
-                }} /></small>
               </div>
             </div>
 

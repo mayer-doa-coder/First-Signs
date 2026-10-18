@@ -3,7 +3,7 @@ import { chromium } from "playwright-core";
 const baseUrl = process.env.APP_URL ?? "http://localhost:3000";
 const executablePath = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 const browser = await chromium.launch({ executablePath, headless: true });
-const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+const context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
 await context.route("**/api/screenings", async (route) => {
   const input = route.request().postDataJSON();
   await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ screening: { screeningId: input.screeningId, created: true, screeningRewardCreated: false } }) });

@@ -3,7 +3,8 @@ import { mkdir } from "node:fs/promises";
 
 const executablePath = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 const baseUrl = process.env.APP_URL ?? "http://localhost:3000";
-const routes = ["/", "/screen", "/care", "/referral", "/verify", "/pharmacy", "/dashboard", "/community"];
+const routes = ["/", "/screen", "/care", "/referral", "/verify", "/pharmacy", "/dashboard", "/community", "/account", "/assistant", "/medicines"];
+const protectedUnauthenticatedRoutes = new Set(["/account", "/pharmacy", "/dashboard"]);
 const viewports = [
   { name: "small-mobile", width: 320, height: 568 },
   { name: "mobile", width: 390, height: 844 },
@@ -18,17 +19,21 @@ const failures = [];
 await mkdir(".artifacts", { recursive: true });
 
 for (const viewport of viewports) {
-  const context = await browser.newContext({ viewport });
+  const context = await browser.newContext({ viewport, reducedMotion: "reduce" });
 
   for (const route of routes) {
     const page = await context.newPage();
     const runtimeErrors = [];
     page.on("console", (message) => {
-      if (message.type() === "error") runtimeErrors.push(message.text());
+      if (message.type() !== "error") return;
+      if (protectedUnauthenticatedRoutes.has(route) && message.text().includes("status of 401")) return;
+      runtimeErrors.push(message.text());
     });
     page.on("pageerror", (error) => runtimeErrors.push(error.message));
 
-    const response = await page.goto(new URL(route, baseUrl).toString(), { waitUntil: "networkidle" });
+    const response = await page.goto(new URL(route, baseUrl).toString(), { waitUntil: "domcontentloaded" });
+    await page.locator("h1").waitFor({ state: "visible" });
+    await page.waitForLoadState("load");
     const dimensions = await page.evaluate(() => ({
       clientWidth: document.documentElement.clientWidth,
       scrollWidth: document.documentElement.scrollWidth,
@@ -63,6 +68,7 @@ for (const viewport of viewports) {
     }
 
     await page.getByRole("button", { name: "বাংলা" }).click();
+    await page.locator('h1 [lang="bn"]').waitFor({ state: "visible" });
     const banglaState = await page.evaluate(() => ({
       documentLanguage: document.documentElement.lang,
       clientWidth: document.documentElement.clientWidth,
@@ -83,9 +89,11 @@ for (const viewport of viewports) {
   await context.close();
 }
 
-const languageContext = await browser.newContext({ viewport: viewports[0] });
+const languageContext = await browser.newContext({ viewport: viewports[0], reducedMotion: "reduce" });
 const languagePage = await languageContext.newPage();
-await languagePage.goto(new URL("/", baseUrl).toString(), { waitUntil: "networkidle" });
+await languagePage.goto(new URL("/", baseUrl).toString(), { waitUntil: "domcontentloaded" });
+await languagePage.locator("h1").waitFor({ state: "visible" });
+await languagePage.waitForLoadState("load");
 
 const defaultLanguage = await languagePage.locator('.language-option[aria-pressed="true"] span').getAttribute("lang");
 const englishFont = await languagePage.locator('h1 [lang="en"]').evaluate((element) => getComputedStyle(element).fontFamily);

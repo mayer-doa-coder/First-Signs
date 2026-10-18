@@ -136,11 +136,6 @@ export function ReferralTicket({ initialToken, qrBaseUrl }: { initialToken?: str
     );
   }
 
-  const createdAt = new Intl.DateTimeFormat(language === "bn" ? "bn-BD" : "en-GB", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(referral.createdAt));
-
   return (
     <PageShell
       eyebrow={{ bn: "রেফারেল", en: "Referral" }}
@@ -190,7 +185,6 @@ export function ReferralTicket({ initialToken, qrBaseUrl }: { initialToken?: str
               <div><dt><BilingualText copy={{ bn: "অবস্থান", en: "Location" }} /></dt><dd>{centreArea} · {centreDistrict}</dd></div>
               <div><dt><BilingualText copy={{ bn: "সেবার ধরন", en: "Service type" }} /></dt><dd>{serviceType}</dd></div>
               <div><dt><BilingualText copy={{ bn: "বর্তমান অবস্থা", en: "Current status" }} /></dt><dd><BilingualText copy={statusCopy[referral.status]} /> <span lang="en">({referral.status})</span></dd></div>
-              <div><dt><BilingualText copy={{ bn: "তৈরির সময়", en: "Created" }} /></dt><dd>{createdAt}</dd></div>
             </dl>
           </div>
 

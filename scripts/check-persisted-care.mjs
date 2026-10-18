@@ -56,14 +56,15 @@ await page.route("**/api/care", async (route) => {
 
 await page.goto(`${baseUrl}/care?patient=${patientId}&source=self`, { waitUntil: "networkidle" });
 check(careRequests === 1, "A fresh care page did not request the persisted backend record");
-check((await page.locator('[data-summary="recommendation"] strong').textContent())?.includes("আনুষ্ঠানিক"), "Persisted Bangla care status did not render");
+check((await page.locator('[data-summary="recommendation"] strong').textContent())?.includes("Formal evaluation"), "Persisted English-default care status did not render");
 check(await page.evaluate((id) => Boolean(localStorage.getItem(`jvh-care-v1:${id}`)), patientId), "Persisted care was not cached for offline fallback");
 
 await page.reload({ waitUntil: "networkidle" });
 check(careRequests === 2, "Reload used stale browser state without refreshing the persisted backend record");
 
+await page.getByRole("button", { name: "বাংলা" }).click();
+check((await page.locator('[data-summary="recommendation"] strong').textContent())?.includes("আনুষ্ঠানিক"), "Persisted Bangla care status did not render");
 await page.getByRole("button", { name: "English" }).click();
-check((await page.locator('[data-summary="recommendation"] strong').textContent())?.includes("Formal evaluation"), "Persisted English care status did not render");
 const layout = await page.evaluate(() => ({
   clientWidth: document.documentElement.clientWidth,
   scrollWidth: document.documentElement.scrollWidth,
@@ -74,13 +75,13 @@ expectingNotFound = true;
 const notFoundResponse = await page.goto(`${baseUrl}/definitely-not-a-route`, { waitUntil: "networkidle" });
 expectingNotFound = false;
 check(notFoundResponse?.status() === 404, "Unknown route did not retain HTTP 404 status");
-check((await page.locator("main").textContent())?.includes("এই ঠিকানায় কোনো পৃষ্ঠা নেই"), "Custom Bangla not-found page did not render");
-const banglaNotFoundFont = await page.locator('main h1 [lang="bn"]').evaluate((element) => getComputedStyle(element).fontFamily);
-check(banglaNotFoundFont.includes("Noto Sans Bengali"), `Bangla not-found content used the wrong font: ${banglaNotFoundFont}`);
-await page.getByRole("button", { name: "English" }).click();
 check((await page.locator("main").textContent())?.includes("There is no page at this address"), "Custom English not-found page did not render");
 const englishNotFoundFont = await page.locator('main h1 [lang="en"]').evaluate((element) => getComputedStyle(element).fontFamily);
 check(englishNotFoundFont.includes("Merriweather"), `English not-found content used the wrong font: ${englishNotFoundFont}`);
+await page.getByRole("button", { name: "বাংলা" }).click();
+check((await page.locator("main").textContent())?.includes("এই ঠিকানায় কোনো পৃষ্ঠা নেই"), "Custom Bangla not-found page did not render");
+const banglaNotFoundFont = await page.locator('main h1 [lang="bn"]').evaluate((element) => getComputedStyle(element).fontFamily);
+check(banglaNotFoundFont.includes("Noto Sans Bengali"), `Bangla not-found content used the wrong font: ${banglaNotFoundFont}`);
 
 await browser.close();
 

@@ -126,16 +126,6 @@ function followUpMessageCopy(record: CareRecord, centreName?: Copy): Copy | null
   };
 }
 
-function formatMoment(isoTime: string, language: "bn" | "en") {
-  const moment = new Date(isoTime);
-  if (Number.isNaN(moment.getTime())) return "";
-
-  return new Intl.DateTimeFormat(language === "bn" ? "bn-BD" : "en-GB", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(moment);
-}
-
 function mergePersistedCare(persisted: CareRecord, local: CareRecord | null) {
   const area = getBroadArea(persisted.area);
   const fallbackCentreId = area ? getRecommendedCentre(area)?.centre.id : undefined;
@@ -405,7 +395,11 @@ export function CareCompanion({
   // that stability to avoid rebuilding the map and refetching the route
   // whenever the area and selected centre have not actually changed.
   const broadArea = record ? getBroadArea(record.area) : undefined;
-  const centre = record ? getTbCentre(record.selectedCentreId) : undefined;
+  // Older/offline records may predate selectedCentreId. Preserve a usable,
+  // broad-area recommendation instead of rendering an empty centre panel.
+  const centre = record
+    ? getTbCentre(record.selectedCentreId) ?? (broadArea ? getRecommendedCentre(broadArea)?.centre : undefined)
+    : undefined;
   const rankedCentres = useMemo(() => (broadArea ? rankCentresByDistance(broadArea) : []), [broadArea]);
   const recommendedCentreId = useMemo(() => (broadArea ? getRecommendedCentre(broadArea)?.centre.id : undefined), [broadArea]);
   const mapAlternates = useMemo(
@@ -443,9 +437,6 @@ export function CareCompanion({
     : null;
   const isUrgent = currentRecord.screeningOutcome === SAFETY_OUTCOMES.URGENT_EVALUATION;
   const referralPathwayAvailable = currentRecord.screeningOutcome !== SAFETY_OUTCOMES.CONTINUE;
-  const screenedAt = formatMoment(currentRecord.createdAt, language);
-  const updatedAt = formatMoment(currentRecord.updatedAt, language);
-
   function updateCare(changes: Partial<CareRecord>, nextFeedback: Copy) {
     const updatedRecord: CareRecord = { ...currentRecord, ...changes, updatedAt: new Date().toISOString() };
     saveCareRecord(updatedRecord);
@@ -552,8 +543,8 @@ export function CareCompanion({
         },
         simulated
           ? {
-              bn: "ডেমোর জন্য ২৪ ঘণ্টা পার হয়েছে ধরা হয়েছে। রেফারেলটি FOLLOW_UP হয়েছে। এখন যেতে না পারার কারণ জানান।",
-              en: "For the demo, 24 hours have been simulated. The referral is now FOLLOW_UP. Tell us what prevented the visit.",
+              bn: "ডেমোর ফলো-আপ শুরু হয়েছে। রেফারেলটি FOLLOW_UP হয়েছে। এখন যেতে না পারার কারণ জানান।",
+              en: "Demo follow-up has started. The referral is now FOLLOW_UP. Tell us what prevented the visit.",
             }
           : {
               bn: "আপনি যেতে পারেননি—এটি রাখা হয়েছে। এখন যেতে না পারার কারণ জানান।",
@@ -782,11 +773,6 @@ export function CareCompanion({
         <div className="care-identity-main">
           <span className="mini-label"><BilingualText copy={{ bn: "ডেমো রোগী আইডি", en: "Demo patient ID" }} /></span>
           <code lang="en" data-patient-id>{currentRecord.patientId}</code>
-          {updatedAt && (
-            <small>
-              <BilingualText copy={{ bn: `সর্বশেষ হালনাগাদ: ${updatedAt}`, en: `Last updated: ${updatedAt}` }} />
-            </small>
-          )}
         </div>
         <div className="care-identity-side">
           <StatusPill
@@ -883,7 +869,7 @@ export function CareCompanion({
               <span><Icon name="check" /></span>
               <div>
                 <strong><BilingualText copy={{ bn: "স্ক্রিনিং", en: "Screening" }} /></strong>
-                <small><BilingualText copy={screenedAt ? { bn: `সম্পন্ন — ${screenedAt}`, en: `Complete — ${screenedAt}` } : { bn: "সম্পন্ন", en: "Complete" }} /></small>
+                <small><BilingualText copy={{ bn: "সম্পন্ন", en: "Complete" }} /></small>
               </div>
             </li>
             <li className="complete">
@@ -1122,7 +1108,7 @@ export function CareCompanion({
               data-action="simulate-24-hours"
             >
               <Icon name="clock" />
-              <BilingualText copy={{ bn: "ডেমো: ২৪ ঘণ্টা পার করুন", en: "Simulate +24 Hours" }} />
+              <BilingualText copy={{ bn: "ডেমো ফলো-আপ শুরু করুন", en: "Start demo follow-up" }} />
               <small><BilingualText copy={{ bn: "শুধু উপস্থাপনার জন্য", en: "Presentation only" }} /></small>
             </button>
           )}

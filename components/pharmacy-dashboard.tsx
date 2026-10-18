@@ -14,15 +14,6 @@ function count(value: number) {
   return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value);
 }
 
-function formatTime(value: string | null, language: "bn" | "en") {
-  if (!value) return language === "bn" ? "এখনও কোনো কার্যক্রম নেই" : "No activity yet";
-  return new Intl.DateTimeFormat(language === "bn" ? "bn-BD" : "en-BD", {
-    dateStyle: "medium",
-    timeStyle: "short",
-    timeZone: "Asia/Dhaka",
-  }).format(new Date(value));
-}
-
 export function PharmacyDashboard({ initialPharmacyId }: { initialPharmacyId: string }) {
   const router = useRouter();
   const { language } = useLanguage();
@@ -108,7 +99,6 @@ export function PharmacyDashboard({ initialPharmacyId }: { initialPharmacyId: st
         <>
           <div className="selected-pharmacy-heading">
             <div><span className="mini-label"><BilingualText copy={{ bn: "বর্তমান ফার্মেসি", en: "Current pharmacy" }} /></span><h2><BilingualText copy={localPharmacy?.name ?? { bn: dashboard.pharmacyName, en: dashboard.pharmacyName }} /></h2><p><BilingualText copy={localPharmacy?.area ?? { bn: dashboard.pharmacyArea, en: dashboard.pharmacyArea }} /></p></div>
-            <small lang={language}>{formatTime(dashboard.lastActivityAt, language)}</small>
           </div>
 
           <div className="metrics-grid">
