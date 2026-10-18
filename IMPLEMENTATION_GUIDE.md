@@ -15,7 +15,7 @@ Run `npm run check:config` before starting the app or deploying it. It prints on
 - Feature-specific: `TB_CENTRE_STAFF_PIN` enables demo centre verification; `GEMINI_API_KEY` enables AI explanations; both `HEAR_SERVICE_URL` and `HEAR_SERVICE_TOKEN` enable real acoustic processing.
 - Telegram messaging is disabled until its variables and a public HTTPS callback URL are configured.
 
-Copy `.env.example` to `.env.local` for local development, replace placeholders, and restart Next.js after every environment-variable change. Keep `.env.local` out of Git. In hosted environments, add the same server-only values through the host's secret/configuration panel, then rebuild if `NEXT_PUBLIC_APP_URL` changes because Next.js embeds `NEXT_PUBLIC_` values into the browser bundle at build time. For Render, use the committed `render.yaml`; it runs `npm ci && npm run build`, starts with Render's assigned `PORT`, and prompts for secret values instead of committing them.
+Copy `.env.example` to `.env.local` for local development, replace placeholders, and restart Next.js after every environment-variable change. Keep `.env.local` out of Git. In hosted environments, add the same server-only values through the host's secret/configuration panel, then rebuild if `NEXT_PUBLIC_APP_URL` changes because Next.js embeds `NEXT_PUBLIC_` values into the browser bundle at build time.
 
 ## Language foundation — required from the start
 
