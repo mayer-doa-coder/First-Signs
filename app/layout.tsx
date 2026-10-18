@@ -34,6 +34,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body>
         <LanguageProvider>
           <a className="skip-link" href="#main-content">Skip to content / মূল কনটেন্টে যান</a>
+          <div className="healthcare-background" aria-hidden="true">
+            <span className="healthcare-background-lungs" />
+            <span className="healthcare-background-microbe" />
+            <span className="healthcare-background-map" />
+            <span className="healthcare-background-system" />
+          </div>
           <SiteHeader />
           <MotionShell>{children}</MotionShell>
           <SiteFooter />

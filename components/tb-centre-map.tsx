@@ -227,7 +227,7 @@ export function TbCentreMap({
       bounds.extend(toLngLat(area));
       bounds.extend(toLngLat(centre));
 
-      const areaMarker = new maplibregl.Marker({ color: "#356b8c" })
+      const areaMarker = new maplibregl.Marker({ color: "#277f80" })
         .setLngLat(toLngLat(area))
         .setPopup(
           new maplibregl.Popup({ offset: 20 }).setDOMContent(
@@ -244,7 +244,7 @@ export function TbCentreMap({
         .addTo(map);
       markersRef.current.push(areaMarker);
 
-      const centreMarker = new maplibregl.Marker({ color: "#087f72" })
+      const centreMarker = new maplibregl.Marker({ color: "#176568" })
         .setLngLat(toLngLat(centre))
         .setPopup(
           new maplibregl.Popup({ offset: 20 }).setDOMContent(
@@ -289,8 +289,8 @@ export function TbCentreMap({
         type: "geojson",
         data: { type: "Feature", geometry: areaCirclePolygon(area, areaRadiusMeters), properties: {} },
       });
-      map.addLayer({ id: "area-circle-fill", type: "fill", source: "area-circle", paint: { "fill-color": "#356b8c", "fill-opacity": 0.12 } });
-      map.addLayer({ id: "area-circle-line", type: "line", source: "area-circle", paint: { "line-color": "#356b8c", "line-width": 1.5, "line-dasharray": [2, 2] } });
+      map.addLayer({ id: "area-circle-fill", type: "fill", source: "area-circle", paint: { "fill-color": "#277f80", "fill-opacity": 0.12 } });
+      map.addLayer({ id: "area-circle-line", type: "line", source: "area-circle", paint: { "line-color": "#277f80", "line-width": 1.5, "line-dasharray": [2, 2] } });
 
       if (map.getLayer("route-line")) map.removeLayer("route-line");
       if (map.getSource("route-line")) map.removeSource("route-line");
@@ -303,7 +303,7 @@ export function TbCentreMap({
         type: "line",
         source: "route-line",
         layout: { "line-cap": "round", "line-join": "round" },
-        paint: { "line-color": "#087f72", "line-width": 4, "line-dasharray": [0.1, 1.6] },
+        paint: { "line-color": "#176568", "line-width": 4, "line-dasharray": [0.1, 1.6] },
       });
 
       map.fitBounds(bounds, { padding: 56, maxZoom: 14, duration: 500 });

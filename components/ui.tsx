@@ -25,6 +25,7 @@ export function PageShell({
     care: { src: "/healthcare/respiratory-consultation.png", width: 960, height: 838 },
     document: { src: "/healthcare/lungs-illustration.png", width: 2096, height: 1541 },
     location: { src: "/healthcare/clinician-care-illustration.png", width: 990, height: 898 },
+    dashboard: { src: "/healthcare/public-health-systems.png", width: 884, height: 837 },
   };
   const artwork = heroArtwork[icon];
   return (

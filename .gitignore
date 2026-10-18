@@ -20,6 +20,7 @@
 
 # misc
 .DS_Store
+~$*.pptx
 __pycache__/
 *.py[cod]
 *.pem
