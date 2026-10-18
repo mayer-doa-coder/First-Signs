@@ -39,6 +39,15 @@ The platform provides:
 
 The main innovation is not a symptom score. It is the connected journey from concern to care.
 
+## See the prototype
+
+- [Try First Signs](https://first-signs.onrender.com)
+- [Start a self-use check](https://first-signs.onrender.com/screen?source=self)
+- [Browse the pharmacy-assisted demo directory](https://first-signs.onrender.com/pharmacies)
+- [Review the source code and tests](https://github.com/mayer-doa-coder/First-Signs)
+
+The self-use route is the primary experience. Pharmacy assistance is an additional option for people who want help using the same five care pathways.
+
 ## Inspiration
 
 We began with one question:
@@ -100,6 +109,29 @@ Both entry routes use the same care rules. The entry context is kept throughout 
 7. **Reach care.** Authorized staff at the intended facility look up the referral and record attendance.
 8. **Continue after a missed visit.** The platform records the barrier and offers a relevant next action.
 
+### The journey at a glance
+
+```text
+At home or with pharmacy help
+            ↓
+Choose one of five health concerns
+            ↓
+Consent + short, pathway-specific questions
+            ↓
+Fixed safety outcome and clear next step
+            ↓
+Listed care facility + optional referral ID and QR code
+            ↓
+      ┌─────┴─────┐
+      ↓           ↓
+Attend       Missed visit
+      ↓           ↓
+Assigned     Identify the barrier and
+facility     support another attempt
+independently       ↓
+records arrival   My Care follow-up
+```
+
 ### Clear roles
 
 | Participant | What they can do |
@@ -136,6 +168,19 @@ These safeguards are central to the design, so they are stated once here and app
 | **Government views exclude identifiable patient information.** | Public-health reporting uses grouped, broad-area data rather than names, raw answers, referral tokens, audio, or exact GPS. | Dashboard shaping is handled by [`app/api/dashboard/route.ts`](https://github.com/mayer-doa-coder/First-Signs/blob/main/app/api/dashboard/route.ts) and [`lib/government-dashboard.ts`](https://github.com/mayer-doa-coder/First-Signs/blob/main/lib/government-dashboard.ts); privacy behavior is tested in [`supabase/tests/part13_government_dashboard.sql`](https://github.com/mayer-doa-coder/First-Signs/blob/main/supabase/tests/part13_government_dashboard.sql) and [`supabase/tests/part13_hotspot_map.sql`](https://github.com/mayer-doa-coder/First-Signs/blob/main/supabase/tests/part13_hotspot_map.sql). |
 | **Referral completion records attendance, not treatment.** | A completed referral means that the person arrived and formal evaluation began. It says nothing about diagnosis, test result, treatment, or recovery. | The transition is implemented by the verification route and the database workflow in [`supabase/migrations/20260913230323_add_part10_tb_centre_verification.sql`](https://github.com/mayer-doa-coder/First-Signs/blob/main/supabase/migrations/20260913230323_add_part10_tb_centre_verification.sql), with API coverage in [`scripts/check-verification-flow.mjs`](https://github.com/mayer-doa-coder/First-Signs/blob/main/scripts/check-verification-flow.mjs). |
 
+### Two deliberately separate information paths
+
+```text
+Private care journey
+person → screening → referral → assigned facility → My Care
+              │
+              └── private answers, token, and QR stay within the care journey
+
+Privacy-safe public-health signal
+broad area + pathway + age band + outcome + time → grouped dashboard
+              └── supports investigation and planning, not diagnosis or outbreak confirmation
+```
+
 ## What makes First Signs different
 
 First Signs is not only a questionnaire, chatbot, map, referral form, pharmacy dashboard, or government dashboard. It connects those parts into one accountable flow:
@@ -158,7 +203,25 @@ We separated the platform into three layers:
 2. **Care-navigation layer:** facilities, referrals, QR codes, attendance, follow-up, My Care, role access, and reporting.
 3. **Optional support layer:** AI explanations, Telegram messaging, reminders, mapping enhancements, and experimental audio processing.
 
-This separation lets the core care path continue when an optional external service is unavailable.
+This separation lets the core care path continue when an optional external service is unavailable. The diagram below shows architectural boundaries, **not** a mandatory execution sequence: optional services can extend the journey, but a referral never has to pass through AI, Telegram, reminders, mapping, or audio processing.
+
+```text
+┌─────────────────────────────┐     ┌─────────────────────────────┐
+│ Fixed safety layer          │     │ Optional support layer      │
+│ questions → versioned rules │     │ AI, messaging, reminders,   │
+│ controls the care outcome   │     │ maps, experimental audio    │
+└──────────────┬──────────────┘     │ may extend the experience   │
+               │                    └──────────────┬──────────────┘
+               ↓                                   │
+┌─────────────────────────────┐                    │
+│ Care-navigation layer       │◀───────────────────┘
+│ facilities, referral,       │  optional only
+│ attendance, follow-up       │
+└─────────────────────────────┘
+
+Optional services can explain or extend the journey.
+They do not replace the fixed safety outcome.
+```
 
 ### Technical architecture
 
