@@ -12,6 +12,8 @@
     "test:config": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test scripts/check-server-configuration.test.mts",
     "test:entries": "node scripts/check-entry-paths.mjs",
     "test:safety": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test scripts/check-safety-rules.test.mts",
+    "test:pathways": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test scripts/check-care-pathways.test.mts",
+    "test:pathways-browser": "node scripts/check-multisyndrome-browser.mjs",
     "test:care": "node scripts/check-care-companion.mjs",
     "test:care-persistence": "node scripts/check-persisted-care.mjs",
     "test:finder": "node scripts/check-tb-centre-finder.mjs",

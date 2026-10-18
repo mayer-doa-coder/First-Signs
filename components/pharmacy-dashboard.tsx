@@ -133,7 +133,7 @@ export function PharmacyDashboard({ initialPharmacyId }: { initialPharmacyId: st
             </ClayCard>
 
             <ClayCard className="reward-card">
-              <StatusPill tone="warning" icon="info" label={{ bn: "উদাহরণমূলক প্রোটোটাইপ প্রণোদনা", en: "Illustrative prototype incentive" }} />
+              <StatusPill tone="warning" icon="info" label={{ bn: "উদাহরণমূলক সিমুলেটেড প্রণোদনা", en: "Illustrative simulated incentive" }} />
               <span className="mini-label"><BilingualText copy={{ bn: "সিমুলেটেড আয়", en: "Simulated earnings" }} /></span>
               <strong className="earnings" lang="en">{dashboard.earningsConfigured && dashboard.simulatedEarnings !== null ? `৳ ${dashboard.simulatedEarnings.toFixed(2)}` : "৳ —"}</strong>
               <p><BilingualText copy={dashboard.earningsConfigured ? { bn: "এটি বাস্তব অর্থ নয়; শুধু কনফিগার করা উদাহরণমূলক ক্রেডিটের যোগফল।", en: "This is not real money; it is only the total of configured illustrative credits." } : { bn: "প্রণোদনার টাকার হার PRD-তে নির্ধারিত নেই, তাই কোনো কাল্পনিক আয় দেখানো হয়নি।", en: "The PRD does not define incentive amounts, so no invented earnings are shown." }} /></p>

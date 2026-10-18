@@ -256,9 +256,9 @@ export function ReferralVerification() {
 
   return (
     <PageShell
-      eyebrow={{ bn: "সেবাকেন্দ্র কর্মক্ষেত্র", en: "TB centre workspace" }}
+      eyebrow={{ bn: "সেবাকেন্দ্র কর্মক্ষেত্র", en: "Care facility workspace" }}
       title={{ bn: "রেফারেল উপস্থিতি যাচাই", en: "Verify referral attendance" }}
-      description={{ bn: "সেবাকেন্দ্র কর্মীরা রেফারেল খুঁজে আনুষ্ঠানিক মূল্যায়ন শুরু হওয়ার তথ্য নিশ্চিত করবেন।", en: "TB-centre staff can find a referral and confirm that formal evaluation has started." }}
+      description={{ bn: "সেবাকেন্দ্র কর্মীরা রেফারেল খুঁজে পেশাদার মূল্যায়ন শুরু হওয়ার তথ্য নিশ্চিত করবেন।", en: "Care-facility staff can find a referral and confirm that professional evaluation has started." }}
       icon="building"
     >
       <DemoNotice />
@@ -272,7 +272,7 @@ export function ReferralVerification() {
             <StatusPill tone="neutral" icon="shield" label={{ bn: "সীমিত প্রবেশ", en: "Restricted access" }} />
           </div>
           <form className="field-stack" onSubmit={submitManualLookup}>
-            <label htmlFor="tb-centre-staff-pin"><BilingualText copy={{ bn: "সেবাকেন্দ্র কর্মীর পিন", en: "TB centre staff PIN" }} /></label>
+            <label htmlFor="tb-centre-staff-pin"><BilingualText copy={{ bn: "সেবাকেন্দ্র কর্মীর পিন", en: "Care facility staff PIN" }} /></label>
             <div className="input-with-icon">
               <Icon name="shield" />
               <input
@@ -293,7 +293,7 @@ export function ReferralVerification() {
                 required
               />
             </div>
-            <p className="helper-text"><BilingualText copy={{ bn: "এই সার্ভার-নিয়ন্ত্রিত পিন শুধু যক্ষ্মা সেবাকেন্দ্র কর্মীর জন্য। ফার্মেসি এটি ব্যবহার করবে না।", en: "This server-controlled PIN is for TB-centre staff only. Pharmacies must not use it." }} /></p>
+            <p className="helper-text"><BilingualText copy={{ bn: "এই সার্ভার-নিয়ন্ত্রিত পিন শুধু সেবাকেন্দ্র কর্মীর জন্য। ফার্মেসি এটি ব্যবহার করবে না।", en: "This server-controlled PIN is for care-facility staff only. Pharmacies must not use it." }} /></p>
             <label htmlFor="referral-id"><BilingualText copy={{ bn: "রেফারেল আইডি", en: "Referral ID" }} /></label>
             <div className="input-with-icon">
               <Icon name="search" />
@@ -384,7 +384,7 @@ export function ReferralVerification() {
           <div className="verification-details">
             <dl className="detail-list">
               <div><dt><BilingualText copy={{ bn: "একবার ব্যবহার হয়েছে কি না", en: "Already used" }} /></dt><dd><BilingualText copy={referral.codeUsed ? { bn: "হ্যাঁ", en: "Yes" } : { bn: "না", en: "No" }} /></dd></div>
-              <div><dt><BilingualText copy={{ bn: "নির্ধারিত যক্ষ্মা সেবাকেন্দ্র", en: "Intended TB centre" }} /></dt><dd>{centreName}</dd></div>
+              <div><dt><BilingualText copy={{ bn: "নির্ধারিত সেবাকেন্দ্র", en: "Intended care facility" }} /></dt><dd>{centreName}</dd></div>
               <div><dt><BilingualText copy={{ bn: "অবস্থান", en: "Location" }} /></dt><dd>{centreArea} · {centreDistrict}</dd></div>
               <div><dt><BilingualText copy={{ bn: "তালিকাভুক্ত সেবা", en: "Listed service" }} /></dt><dd>{serviceType}</dd></div>
             </dl>
@@ -411,8 +411,8 @@ export function ReferralVerification() {
           <div className="formal-evaluation-note">
             <Icon name="info" />
             <p><BilingualText copy={{
-              bn: "এখানে সম্পন্ন মানে উপস্থিতি ও আনুষ্ঠানিক মূল্যায়ন শুরু নিশ্চিত হয়েছে—যক্ষ্মা রোগ নির্ণয় বা পরীক্ষার ফল নয়। প্রশিক্ষিত কর্মী উপসর্গ ও ইতিহাস দেখবেন এবং কেন্দ্রের সেবা ও ব্যক্তির প্রয়োজন অনুযায়ী কফের জিনএক্সপার্ট বা অন্য দ্রুত আণবিক পরীক্ষা, মাইক্রোস্কপি, বুকের এক্স-রে বা অন্য পরীক্ষা বেছে নিতে পারেন।",
-              en: "Completed here confirms attendance and the start of formal evaluation—not a TB diagnosis or test result. Trained staff will review symptoms and history and may select sputum GeneXpert/another rapid molecular test, microscopy, chest X-ray, or other tests according to the centre's services and the person's needs.",
+              bn: "এখানে সম্পন্ন মানে উপস্থিতি ও পেশাদার মূল্যায়ন শুরু নিশ্চিত হয়েছে—কোনো রোগ নির্ণয় বা পরীক্ষার ফল নয়। প্রশিক্ষিত কর্মী উপসর্গ ও ইতিহাস দেখে সেবাকেন্দ্রের সক্ষমতা ও ব্যক্তির প্রয়োজন অনুযায়ী উপযুক্ত পরীক্ষা বা পরবর্তী রেফারেল ঠিক করবেন।",
+              en: "Completed here confirms attendance and the start of professional evaluation—not a diagnosis or test result. Trained staff will review symptoms and history and determine appropriate testing or onward referral according to the facility's services and the person's needs.",
             }} /></p>
           </div>
         </ClayCard>

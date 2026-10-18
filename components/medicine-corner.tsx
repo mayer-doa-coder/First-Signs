@@ -2,6 +2,7 @@
 /* eslint-disable @next/next/no-img-element -- DailyMed provides runtime product-label image URLs that cannot be safely preconfigured for Next image optimization. */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { BilingualText, useLanguage, type Copy } from "@/components/language";
 import { Icon } from "@/components/icons";
 import { ClayCard, PageShell, SectionHeading, StatusPill } from "@/components/ui";
@@ -22,13 +23,15 @@ type VerifiedProduct = {
 
 function VerifiedProductPhotos({ medicine }: { medicine: Medicine }) {
   const { language } = useLanguage();
+  const [open, setOpen] = useState(false);
   const [products, setProducts] = useState<VerifiedProduct[] | null>(null);
   const [selected, setSelected] = useState(0);
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
   const [image, setImage] = useState(0);
   const [imageUnavailable, setImageUnavailable] = useState(false);
-  const root = useRef<HTMLDivElement | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const closeButton = useRef<HTMLButtonElement | null>(null);
   const loaded = useRef(false);
   const loadingRef = useRef(false);
   const product = products?.[selected];
@@ -46,39 +49,34 @@ function VerifiedProductPhotos({ medicine }: { medicine: Medicine }) {
   }, [medicine.id]);
 
   useEffect(() => {
-    const node = root.current;
-    if (!node) return;
-    const Observer = window.IntersectionObserver;
-    if (!Observer) {
-      const timer = window.setTimeout(() => void load(), 0);
-      return () => window.clearTimeout(timer);
-    }
-    const observer = new Observer((entries) => {
-      if (entries.some((entry) => entry.isIntersecting)) { void load(); observer.disconnect(); }
-    }, { rootMargin: "180px" });
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [load]);
+    if (!open) return;
+    const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape") setOpen(false); };
+    window.addEventListener("keydown", onKeyDown);
+    const frame = window.requestAnimationFrame(() => closeButton.current?.focus());
+    return () => { window.removeEventListener("keydown", onKeyDown); window.cancelAnimationFrame(frame); };
+  }, [open]);
 
-  return <div className="verified-products" ref={root}>
-    <p className="medicine-photo-title"><Icon name="document" /><BilingualText copy={{ bn: "যাচাইকৃত পণ্যের ছবি", en: "Verified product photo" }} /></p>
-    {loading && <p className="medicine-photo-loading" role="status"><BilingualText copy={{ bn: "DailyMed থেকে ছবি আনা হচ্ছে…", en: "Loading the DailyMed photo…" }} /></p>}
-    {failed && <p className="medicine-photo-notice" role="status"><BilingualText copy={{ bn: "এখন DailyMed থেকে ছবি পাওয়া যাচ্ছে না।", en: "A DailyMed photo is unavailable right now." }} /> <button type="button" onClick={() => { loaded.current = false; void load(); }}><BilingualText copy={{ bn: "আবার চেষ্টা করুন", en: "Try again" }} /></button></p>}
-    {products && products.length === 0 && <p className="medicine-photo-notice" role="status"><BilingualText copy={{ bn: "এই জেনেরিকের জন্য DailyMed-এ যাচাইকৃত পণ্যের ছবি পাওয়া যায়নি।", en: "No verified product photo is available from DailyMed for this generic." }} /></p>}
-    {product && <div className="verified-product-result">
-      <p className="verified-product-disclaimer"><BilingualText copy={{ bn: "DailyMed-এর যুক্তরাষ্ট্রের লেবেল পণ্য। বাংলাদেশের প্যাকেটের সঙ্গে না-ও মিলতে পারে—নাম, শক্তি, ধরন ও প্রস্তুতকারক মিলিয়ে নিন।", en: "A U.S. DailyMed label product. It may not match Bangladesh packaging—confirm the name, strength, form, and manufacturer." }} /></p>
-      {products.length > 1 && <label className="verified-product-select"><BilingualText copy={{ bn: "লেবেল পণ্য নির্বাচন করুন", en: "Choose the label product" }} /><select value={selected} onChange={(event) => { setSelected(Number(event.target.value)); setImage(0); setImageUnavailable(false); }}>{products.map((item, index) => <option key={item.setId} value={index}>{item.labelTitle}</option>)}</select></label>}
-      <div className="verified-product-body">
-        <div className="verified-product-image-wrap">{!imageUnavailable && product.imageUrls[image] ? <img src={product.imageUrls[image]} alt={`${product.labelTitle} — DailyMed product image`} className="verified-product-image" onError={() => { if (image + 1 < product.imageUrls.length) setImage(image + 1); else setImageUnavailable(true); }} /> : <BilingualText copy={{ bn: "ছবি এখন পাওয়া যাচ্ছে না", en: "Photo unavailable" }} />}</div>
-        <div><strong lang="en">{product.productName ?? product.labelTitle}</strong>
-          {product.genericName && <p><BilingualText copy={{ bn: `জেনেরিক: ${product.genericName}`, en: `Generic: ${product.genericName}` }} /></p>}
-          {product.activeIngredients.length > 0 && <p><BilingualText copy={{ bn: `উপাদান: ${product.activeIngredients.map((item) => `${item.name}${item.strength ? ` (${item.strength})` : ""}`).join(", ")}`, en: `Ingredients: ${product.activeIngredients.map((item) => `${item.name}${item.strength ? ` (${item.strength})` : ""}`).join(", ")}` }} /></p>}
-          {product.ndcs.length > 0 && <p lang="en">NDC: {product.ndcs.join(", ")}</p>}
-          <a href={product.labelUrl} target="_blank" rel="noreferrer" className="medicine-source"><Icon name="document" /><BilingualText copy={{ bn: "DailyMed লেবেল দেখুন", en: "View DailyMed label" }} /></a>
+  const dialog = open ? <div className="medicine-photo-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setOpen(false); }}>
+    <section className="medicine-photo-dialog" role="dialog" aria-modal="true" aria-labelledby={`verified-product-title-${medicine.id}`}>
+      <div className="medicine-photo-dialog-heading"><div><p className="medicine-photo-title"><Icon name="document" /><BilingualText copy={{ bn: "যাচাইকৃত পণ্যের ছবি", en: "Verified product photo" }} /></p><h2 id={`verified-product-title-${medicine.id}`}><BilingualText copy={medicine.genericName} /></h2></div><button ref={closeButton} className="button button-secondary medicine-photo-exit" type="button" onClick={() => setOpen(false)}><BilingualText copy={{ bn: "বন্ধ করুন", en: "Exit" }} /></button></div>
+      {loading && <p className="medicine-photo-loading" role="status"><BilingualText copy={{ bn: "DailyMed থেকে ছবি আনা হচ্ছে…", en: "Loading the DailyMed photo…" }} /></p>}
+      {failed && <p className="medicine-photo-notice" role="status"><BilingualText copy={{ bn: "এখন DailyMed থেকে ছবি পাওয়া যাচ্ছে না।", en: "A DailyMed photo is unavailable right now." }} /> <button type="button" onClick={() => { loaded.current = false; void load(); }}><BilingualText copy={{ bn: "আবার চেষ্টা করুন", en: "Try again" }} /></button></p>}
+      {products && products.length === 0 && <p className="medicine-photo-notice" role="status"><BilingualText copy={{ bn: "এই জেনেরিকের জন্য DailyMed-এ যাচাইকৃত পণ্যের ছবি পাওয়া যায়নি।", en: "No verified product photo is available from DailyMed for this generic." }} /></p>}
+      {product && <div className="verified-product-result">
+        <p className="verified-product-disclaimer"><BilingualText copy={{ bn: "DailyMed-এর যুক্তরাষ্ট্রের লেবেল পণ্য। বাংলাদেশের প্যাকেটের সঙ্গে না-ও মিলতে পারে—নাম, শক্তি, ধরন ও প্রস্তুতকারক মিলিয়ে নিন।", en: "A U.S. DailyMed label product. It may not match Bangladesh packaging—confirm the name, strength, form, and manufacturer." }} /></p>
+        {products.length > 1 && <div className="verified-product-select"><span><BilingualText copy={{ bn: "লেবেল পণ্য নির্বাচন করুন", en: "Choose the label product" }} /></span><button className="verified-product-picker" type="button" aria-expanded={pickerOpen} onClick={() => setPickerOpen((current) => !current)}><span lang="en">{product.labelTitle}</span><Icon name="arrow" /></button>{pickerOpen && <div className="verified-product-options" role="listbox" aria-label={language === "bn" ? "লেবেল পণ্য" : "Label products"}>{products.map((item, index) => <button type="button" key={item.setId} role="option" aria-selected={selected === index} onClick={() => { setSelected(index); setImage(0); setImageUnavailable(false); setPickerOpen(false); }}><span lang="en">{item.labelTitle}</span></button>)}</div>}</div>}
+        <div className="verified-product-body">
+          <div className="verified-product-image-wrap">{!imageUnavailable && product.imageUrls[image] ? <img src={product.imageUrls[image]} alt={`${product.labelTitle} — DailyMed product image`} className="verified-product-image" onError={() => { if (image + 1 < product.imageUrls.length) setImage(image + 1); else setImageUnavailable(true); }} /> : <BilingualText copy={{ bn: "ছবি এখন পাওয়া যাচ্ছে না", en: "Photo unavailable" }} />}</div>
+          <div><strong lang="en">{product.productName ?? product.labelTitle}</strong>{product.genericName && <p><BilingualText copy={{ bn: `জেনেরিক: ${product.genericName}`, en: `Generic: ${product.genericName}` }} /></p>}{product.activeIngredients.length > 0 && <p><BilingualText copy={{ bn: `উপাদান: ${product.activeIngredients.map((item) => `${item.name}${item.strength ? ` (${item.strength})` : ""}`).join(", ")}`, en: `Ingredients: ${product.activeIngredients.map((item) => `${item.name}${item.strength ? ` (${item.strength})` : ""}`).join(", ")}` }} /></p>}{product.ndcs.length > 0 && <p lang="en">NDC: {product.ndcs.join(", ")}</p>}<a href={product.labelUrl} target="_blank" rel="noreferrer" className="medicine-source"><Icon name="document" /><BilingualText copy={{ bn: "DailyMed লেবেল দেখুন", en: "View DailyMed label" }} /></a></div>
         </div>
-      </div>
-      {product.imageUrls.length > 1 && <div className="verified-product-thumbnails" aria-label={language === "bn" ? "পণ্যের অন্য ছবি" : "Other product photos"}>{product.imageUrls.map((url, index) => <button type="button" key={url} aria-pressed={image === index} aria-label={language === "bn" ? `ছবি ${index + 1}` : `Photo ${index + 1}`} onClick={() => { setImage(index); setImageUnavailable(false); }}><img src={url} alt="" /></button>)}</div>}
-    </div>}
+        {product.imageUrls.length > 1 && <div className="verified-product-thumbnails" aria-label={language === "bn" ? "পণ্যের অন্য ছবি" : "Other product photos"}>{product.imageUrls.map((url, index) => <button type="button" key={url} aria-pressed={image === index} aria-label={language === "bn" ? `ছবি ${index + 1}` : `Photo ${index + 1}`} onClick={() => { setImage(index); setImageUnavailable(false); }}><img src={url} alt="" /></button>)}</div>}
+      </div>}
+    </section>
+  </div> : null;
+
+  return <div className="verified-products">
+    <button className="button button-secondary medicine-photo-button" type="button" onClick={() => { setPickerOpen(false); setOpen(true); void load(); }}><Icon name="document" /><BilingualText copy={{ bn: "যাচাইকৃত পণ্যের ছবি দেখুন", en: "See verified product photo" }} /></button>
+    {typeof document !== "undefined" && dialog ? createPortal(dialog, document.body) : null}
   </div>;
 }
 

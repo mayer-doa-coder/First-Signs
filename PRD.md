@@ -4,13 +4,51 @@
 
 **First Signs**
 
+## 1A. Approved Multi-Syndrome Expansion (October 2026)
+
+First Signs is a syndrome-based front door for care navigation. The existing
+TB workflow remains available and is joined by four separate, non-diagnostic
+pathways:
+
+1. Persistent cough or respiratory/TB concern
+2. Fever or mosquito-borne illness concern
+3. Diarrhoea or dehydration concern
+4. Skin, sensation, or nerve/leprosy concern
+5. Child cough or difficult breathing
+
+The first question is: **What health concern brings you here today?** Every
+pathway uses reviewed, deterministic rules in which urgent danger signs take
+precedence. The platform routes a person to appropriate evaluation; it does
+not diagnose TB, dengue, malaria, leprosy, pneumonia, or another illness.
+
+The fever pathway must never infer dengue rather than malaria from overlapping
+symptoms. The child-breathing pathway must never label a child as having
+pneumonia. Adults who select the child-breathing pathway receive general
+urgent-care navigation rather than a child-pneumonia classification.
+
+All five pathways are available through self-use and pharmacy-assisted entry.
+The shared care-navigation engine provides broad-area facility discovery,
+referral creation, attendance verification, barrier follow-up, and My Care.
+Simulated workflow credits apply to pharmacy-assisted journeys only.
+
+After consent and the minimum pathway questions, the system may submit an
+anonymous signal containing only pathway, age band, broad area, entry type,
+care outcome, and time. Public-health warnings are investigation signals—not
+confirmed outbreaks—and must never expose identity, raw answers, referral
+tokens, or audio. The existing synthetic 3/5 seven-day thresholds are test
+thresholds only and are not approved real-world outbreak definitions.
+
+Before public clinical use, the final English and Bangla question wording,
+danger signs, rule versions, and care messages require documented clinical and
+public-health reviewer approval.
+
 ## 2. One-Line Description
 
-A simple TB screening and care-navigation service that people can use from home or anywhere through their own phone, while pharmacies provide assisted access for people who do not have a suitable smartphone or need help.
+A simple multi-syndrome screening and care-navigation service that people can use from home or anywhere through their own phone, while pharmacies provide assisted access for people who do not have a suitable smartphone or need help. The approved pathways are persistent cough or respiratory/TB concern, fever or mosquito-borne concern, diarrhoea/dehydration, skin/sensation/nerve concern, and child cough/difficult breathing.
 
 ## 3. Main Goal
 
-The product should reduce the chance that a person with possible TB symptoms is lost before reaching formal TB care.
+The product should reduce the chance that a person with a possible concern in an approved pathway is lost before reaching appropriate formal care.
 
 People can enter the system in two ways:
 
@@ -19,9 +57,9 @@ People can enter the system in two ways:
 
 The main care journey is:
 
-**home / anywhere OR pharmacy → screening → care navigation → referral → government TB centre → completed formal evaluation**
+**home / anywhere OR pharmacy → pathway screening → care navigation → referral when indicated → verified appropriate facility → completed formal evaluation**
 
-The product does **not** diagnose TB. It may show a separately labelled, optional **investigational acoustic TB-triage score** only when the requirements in Section 10A are met. The score is a research signal for whether a cough recording resembles the model's validated TB-screening cohort; it is not a diagnosis, a confirmed probability that a person has TB, or a substitute for clinical assessment and microbiological testing.
+The product does **not** diagnose illness. The respiratory/TB pathway may show a separately labelled, optional **investigational acoustic TB-triage score** only when the requirements in Section 10A are met. The score is a research signal for whether a cough recording resembles the model's validated TB-screening cohort; it is not a diagnosis, a confirmed probability that a person has TB, or a substitute for clinical assessment and microbiological testing.
 
 ## Language Requirement
 
@@ -84,49 +122,49 @@ Provides assisted access for people who do not have a suitable smartphone, inter
 
 Needs a reason to refer the patient instead of losing the possible medicine sale.
 
-### TB Centre Staff
-Needs a simple way to confirm that a referred person reached the centre.
+### TB Centre / Assigned Care-Facility Staff
+Needs a simple way to confirm that a referred person reached their assigned facility. The existing `TB_CENTRE_STAFF` role is retained for the verified TB-evaluation workflow until additional facility-staff roles are implemented.
 
 ### Government / Public Health Viewer
-Needs anonymous information about screening, referrals, referral completion, pharmacy performance, and geographic areas showing unusually high potential-TB screening activity.
+Needs anonymous information about screening, referrals, referral completion, pharmacy performance, and geographic areas showing unusual pathway-specific screening activity.
 
 The dashboard should help authorities identify areas that may need:
 - investigation,
 - awareness activity,
 - mobile screening/testing support,
-- or additional TB service capacity.
+- or additional appropriate service capacity.
 
 ## 6. Core Product Promise
 
-**The pharmacy should not lose financially for sending the right patient to formal TB care.**
+**The pharmacy should not lose financially for sending the right patient to appropriate formal care.**
 
-The prototype will show an incentive system where the pharmacy can earn from:
+The service will show an incentive workflow where the pharmacy can earn simulated credits from:
 
 1. a valid screening,
 2. an appropriate referral,
-3. a larger bonus when the TB centre independently confirms attendance,
+3. a larger bonus when the assigned facility independently confirms attendance,
 4. an optional monthly quality bonus.
 
-All money shown in the prototype must be clearly marked as **illustrative / simulated**.
+All money must remain clearly marked as **illustrative / simulated** until a separately approved real-payment programme exists.
 
 ## 7. Main Patient Flow
 
-1. Patient visits a pharmacy with a persistent cough or related concern.
+1. Patient starts from home or visits a pharmacy with a concern in an approved pathway.
 2. Pharmacy shows the First Signs QR code.
 3. Patient scans the QR code.
 4. Patient opens the web chat first. Telegram is an optional secondary entry point.
 5. Patient sees a clear message that this is screening and care navigation, not diagnosis.
 6. Patient gives consent.
-7. Patient answers a small number of TB symptom and risk questions.
-8. Patient is asked to send or record a cough sample.
-9. The system checks whether the audio is usable.
-10. The system produces an **experimental acoustic screening signal** and, when a validated research model is available, may show an investigational acoustic TB-triage score.
-11. The fixed safety rule uses only the documented symptom inputs. The optional acoustic signal and triage score are shown separately and can never change or downgrade that result.
-12. If formal TB evaluation is recommended, the system shows a nearby verified TB centre.
+7. Patient chooses the relevant concern and answers the pathway's small set of symptom and risk questions.
+8. In the respiratory/TB pathway only, the patient may be asked to send or record a cough sample.
+9. When audio is used, the system checks whether it is usable.
+10. The respiratory/TB pathway may show an **experimental acoustic screening signal** and, when a validated research model is available, an investigational acoustic TB-triage score.
+11. Fixed pathway safety rules use only their documented inputs. The optional acoustic signal and triage score are shown separately and can never change or downgrade a result.
+12. If formal evaluation is recommended, the system shows a nearby verified appropriate facility. The current verified facility directory is TB-evaluation facilities; expansion requires verified pathway-specific facility data.
 13. Patient accepts the referral.
 14. System creates a one-time referral ID / QR code.
 15. Pharmacy dashboard shows the referral as pending.
-16. TB centre staff verifies the referral when the patient arrives.
+16. Assigned facility staff verifies the referral when the patient arrives.
 17. Referral becomes completed.
 18. Pharmacy receives the simulated completion reward.
 19. If the patient does not attend, the system follows up and asks why.
@@ -134,7 +172,7 @@ All money shown in the prototype must be clearly marked as **illustrative / simu
 
 ## 8. Must-Build Features
 
-These are required for the hackathon prototype.
+These are required for the current release.
 
 ### A. Patient Screening Flow
 
@@ -142,8 +180,8 @@ These are required for the hackathon prototype.
 - pharmacy QR / assisted entry
 - consent message
 - English-first simple chat with Bangla available from the persistent language toggle
-- symptom questions
-- cough upload / recording
+- pathway-specific symptom questions
+- cough upload / recording for the respiratory/TB pathway only
 - an in-flow mobile recording action; the person must not have to record in another app before returning to upload
 - trusted HTTPS on deployed patient and pharmacy links so supported mobile browsers can request microphone access
 - a native device-recorder fallback when direct browser recording is unavailable
@@ -151,7 +189,7 @@ These are required for the hackathon prototype.
 - referral recommendation
 - simple companion-style follow-up
 - optional account sign-up and password sign-in after or before screening; anonymous screening remains available
-- a private My Care area for the person's own screening, referral, attendance, follow-up, and consented reminders; it must not diagnose TB or manage treatment
+- a private My Care area for the person's own screening, referral, attendance, follow-up, and consented reminders; it must not diagnose illness or manage treatment
 
 ### Account and Staff Access
 
@@ -165,9 +203,9 @@ These are required for the hackathon prototype.
 - Government information remains anonymous and aggregated; pharmacy users never see private self-use patient information; TB-centre staff independently confirm attendance only for their assigned centre.
 - Reminder email is optional and generic: it must not contain symptoms, referral identifiers, centre details, or diagnostic wording.
 
-### B. TB Centre Finder
+### B. Care Facility Finder
 
-- nationwide list of verified Bangladesh TB-evaluation facilities, with coverage across all eight divisions
+- nationwide list of verified Bangladesh TB-evaluation facilities, with coverage across all eight divisions; additional pathway-specific facility listings require verified source data before release
 - distance or nearby-centre display
 - service type such as microscopy or GeneXpert when available
 - whole-Bangladesh map coverage and broad division-level location selection for stored screening data
@@ -176,7 +214,7 @@ These are required for the hackathon prototype.
 ### C. Referral System
 
 - unique referral ID
-- for the prototype, the first committed referral ID is `JVH-KHU-00001`; each subsequent successfully committed, non-deleted referral increments by one
+- the first committed referral ID is `JVH-KHU-00001`; each subsequent successfully committed, non-deleted referral increments by one
 - failed or rolled-back creation attempts and idempotent retries must not consume a referral number
 - referral status
 - pending / completed / closed states
@@ -195,12 +233,12 @@ Show:
 
 ### E. Missed-Referral Follow-Up
 
-- demo button to simulate time passing
+- a clearly labelled workflow test control to simulate time passing in non-production environments
 - follow-up question
 - barrier options such as work, distance, fear, misunderstanding, or transport
 - simple next action
 
-### F. Government / NTP-Style Dashboard
+### F. Government / Public-health Dashboard
 
 Show only anonymous and aggregated information:
 
@@ -212,10 +250,10 @@ Show only anonymous and aggregated information:
 - pharmacy performance
 - fraud alerts
 - geographic screening-risk map
-- hotspot warnings when one area shows unusually high potential-TB screening/referral activity
+- pathway-specific hotspot warnings when one area shows unusually high screening or referral activity
 - a real interactive Bangladesh basemap with privacy-safe area-level density overlays; it must never plot an individual's GPS position
 - percentages must describe the screened/referral cohort and display their denominator. They must never be labelled as population disease prevalence or confirmed disease occurrence.
-- the first release reports TB-related screening and referral signals only. Another disease category may appear only after its deterministic screening rules, bilingual safety copy, data provenance, aggregation threshold, and non-diagnostic label are added to this PRD and implemented.
+- each pathway may appear only after its deterministic screening rules, bilingual safety copy, data provenance, aggregation threshold, and non-diagnostic label are included in this PRD and implemented.
 
 ### Hotspot Map Rule
 
@@ -223,17 +261,17 @@ The dashboard can show a **red warning area** when many independent users from t
 
 A red area means:
 
-**High potential-TB screening activity — investigate.**
+**High pathway-specific screening activity — investigate.**
 
 It must **not** mean:
 
-**Confirmed TB outbreak.**
+**A confirmed outbreak or disease count.**
 
 Government/public-health staff can then decide whether the area needs:
 - field investigation,
 - awareness work,
-- temporary/mobile TB screening,
-- or additional TB testing/service capacity.
+- temporary/mobile screening or outreach,
+- or additional appropriate testing/service capacity.
 
 Small numbers must be hidden or grouped so individual patients cannot be identified.
 
@@ -265,9 +303,9 @@ Examples:
 
 Medical safety decisions should remain fixed rules.
 
-### A1. TB-first Daily Health Companion
+### A1. Multi-Syndrome Daily Health Companion
 
-Provide a bilingual daily companion focused on TB education, care navigation,
+Provide a bilingual daily companion focused on approved-pathway health education, care navigation,
 and basic medicine information. It may answer general health-education
 questions, but it must not diagnose, prescribe, calculate a personal treatment
 plan, or replace a clinician or pharmacist.
@@ -328,7 +366,7 @@ a person.
 
 Connect the already-working patient flow to Telegram. It must support self-use and pharmacy-assisted entry while reusing the same consent, fixed clinical safety rules, patient records, screening persistence, referral workflow, and follow-up workflow as the website.
 
-Messaging voice files must be processed through the shared prototype audio pipeline. Store only the lowercase SHA-256 digest needed for duplicate-file warning; do not retain the audio file. Messaging audio must not diagnose TB or change the deterministic safety outcome.
+Messaging voice files must be processed through the shared respiratory/TB audio pipeline. Store only the lowercase SHA-256 digest needed for duplicate-file warning; do not retain the audio file. Messaging audio must not diagnose illness or change the deterministic safety outcome.
 
 Telegram webhook requests must be authenticated server-side. Store only a one-way channel identifier for conversation continuity; do not store raw Telegram chat IDs or inbound free text in the messaging-session tables.
 
@@ -340,7 +378,7 @@ Show:
 
 - problem
 - solution
-- demo button
+- service overview button
 - community support / feedback button
 - public interest count
 
@@ -388,10 +426,10 @@ It can be shown as a future expansion.
 - Do not let an AI model override safety rules.
 - Do not reward a pharmacy because a patient tests positive.
 - Do not expose patient identity on the public-health dashboard.
-- Do not use real financial payments in the prototype.
+- Do not use real financial payments without a separately approved programme.
 - Do not build treatment-management features before the referral flow works.
 
-## 12. Pharmacy Incentive Model for the Prototype
+## 12. Pharmacy Incentive Model
 
 Use a simple split reward.
 
@@ -421,11 +459,11 @@ The same patient cannot receive the same pharmacy reward type again within 30 da
 The second and later use of the exact same uploaded audio file should create a warning. Store only its SHA-256 file hash, never the audio, for this check. This warning is for review and is not proof of fraud.
 
 ### Rule 5
-For the prototype, 10 pharmacy referrals within a rolling 24-hour period is an explicitly labelled demo volume threshold. Once reached, only newly created rewards are marked `HELD_FOR_REVIEW`; earlier rewards are not changed. This signal is not proof of fraud.
+For the current workflow, 10 pharmacy referrals within a rolling 24-hour period is an explicitly labelled test volume threshold. Once reached, only newly created rewards are marked `HELD_FOR_REVIEW`; earlier rewards are not changed. This signal is not proof of fraud.
 
 ### Verification access
 
-The `/verify` workflow must require a server-side `TB_CENTRE_STAFF_PIN`. The PIN must never be exposed through a public environment variable, URL, log, repository file, or pharmacy screen. This is prototype access separation, not production staff identity management.
+The `/verify` workflow must require a server-side `TB_CENTRE_STAFF_PIN`. The PIN must never be exposed through a public environment variable, URL, log, repository file, or pharmacy screen. This is temporary access separation, not production staff identity management.
 
 Pharmacy-specific review warnings appear on the pharmacy dashboard. The government dashboard shows anonymous aggregate warning counts only.
 
@@ -439,7 +477,7 @@ Reward is based on correct workflow completion, not on a positive TB result.
 - If the patient reports a serious red-flag symptom, advise formal medical evaluation instead of relying on the cough score.
 - Use only verified TB-centre information.
 - Keep personal health information away from public dashboards.
-- Delete cough audio after processing in the prototype unless it is specifically needed for the demonstration.
+- Delete cough audio after processing unless it is specifically needed for an explicitly consented research workflow.
 
 ### 14.1 Evidence-based Step 21 symptom rule
 
@@ -494,7 +532,7 @@ The person must continue to control whether the system creates a referral. Urgen
 
 ### 14.5 Known clinical limitations and governance
 
-- This symptom-only prototype will produce false positives and false negatives. It does not replace history-taking, examination, chest radiography, or WHO-recommended rapid diagnostic testing.
+- This symptom-only screening workflow will produce false positives and false negatives. It does not replace history-taking, examination, chest radiography, or WHO-recommended rapid diagnostic testing.
 - A simple yes/no symptom set cannot distinguish mild from massive haemoptysis. The rule therefore sends every report of blood in sputum to urgent evaluation and separately explains when immediate emergency care is required.
 - The questions do not capture all age-specific, paediatric, pregnancy, HIV, diabetes, malnutrition, extrapulmonary-TB, or other emergency criteria. A qualified Bangladesh TB/public-health clinician must review and approve this rule before real-world clinical deployment.
 - Rule changes require a documented version, source review, clinical approval, and regression tests. The initial implementation version is `BD-NTP-WHO-SYMPTOM-V1`.
@@ -548,7 +586,7 @@ Collects consent, symptoms, cough audio, shows next steps, and supports follow-u
 Shows the chosen TB centre and referral ID / QR.
 
 ### Screen 4 — TB Centre Verification Page
-Allows demo staff to confirm attendance.
+Allows authorised staff to confirm attendance.
 
 ### Screen 5 — Pharmacy Dashboard
 Shows referral activity and simulated earnings.
@@ -556,7 +594,7 @@ Shows referral activity and simulated earnings.
 ### Screen 6 — Government / NTP Dashboard
 Shows anonymous programme-level information and a privacy-safe geographic hotspot map.
 
-Areas with unusually high potential-TB screening/referral activity can appear as red warning zones for public-health review.
+Areas with unusually high pathway-specific screening/referral activity can appear as red warning zones for public-health review.
 
 ### Screen 7 — Public Launch Page
 Shows the product story and gathers public feedback / support.
@@ -580,7 +618,7 @@ The problem, name, visual identity, and one-line pitch should be memorable.
 ### Community Engagement
 Collect real public feedback or partner interest without asking people to reveal private health information.
 
-## 17. Demo Success Condition
+## 17. Release Success Condition
 
 A judge should be able to see this complete story in a few minutes:
 
@@ -592,7 +630,7 @@ These are recommendations, not requirements.
 
 - **Main website:** Next.js
 - **Database and login:** Supabase
-- **Hosting:** Vercel Hobby for the prototype
+- **Hosting:** Vercel Hobby for the current release
 - **Map:** MapLibre
 - **AI conversation:** Gemini API free tier or fixed responses if AI is unavailable
 - **Messaging:** Telegram Bot API after the web flow works
@@ -647,4 +685,4 @@ These are recommendations, not requirements.
 
 ## 20. Final Product Positioning
 
-**First Signs is not an AI TB diagnosis app. It is a simple, always-available TB screening and care-navigation companion that people can use from home or anywhere, while pharmacies provide assisted access for people who need it. The system helps users move from first concern to completed formal TB evaluation, gives pharmacies a fair reason to participate, and gives public-health authorities anonymous geographic signals that can help identify areas needing further investigation or additional TB service capacity.**
+**First Signs is not an AI diagnosis app. It is a simple, always-available multi-syndrome screening and care-navigation companion that people can use from home or anywhere, while pharmacies provide assisted access for people who need it. The system helps users move from first concern to appropriate formal evaluation, gives pharmacies a fair reason to participate, and gives public-health authorities anonymous pathway-specific geographic signals that can help identify areas needing further investigation or additional service capacity.**

@@ -1,10 +1,12 @@
 import { SAFETY_OUTCOMES, type SafetyOutcome } from "@/lib/safety-rules";
+import { CARE_OUTCOMES, isAgeBand, isPathwayId, type AgeBand, type CareOutcome, type PathwayAnswers, type PathwayId } from "@/lib/care-pathways";
 import type { FollowUpView } from "@/lib/follow-ups";
-import type { ReferralSymptomAnswers, ReferralView } from "@/lib/referrals";
+import type { ReferralView } from "@/lib/referrals";
 
 export type CareEntrySource = "self" | "pharmacy";
 export type CareReferralStatus = "NOT_REQUESTED" | "READY_TO_CONTINUE" | "PENDING" | "FOLLOW_UP_NEEDED" | "COMPLETED" | "CLOSED";
 export type CareAudioChoice = "recorded" | "uploaded" | "skipped";
+export type StoredCareOutcome = SafetyOutcome | CareOutcome;
 
 export type CareRecord = {
   version: 1;
@@ -14,9 +16,12 @@ export type CareRecord = {
   /** Optional. Digits only, normalised to 01XXXXXXXXX. Used only to reopen care in this browser. */
   phone?: string;
   area: string;
-  screeningOutcome: SafetyOutcome;
+  pathwayId?: PathwayId;
+  ruleVersion?: string;
+  ageBand?: AgeBand;
+  screeningOutcome: StoredCareOutcome;
   /** Present for screenings completed after Part 9; used for server-side fixed-rule revalidation. */
-  symptomAnswers?: ReferralSymptomAnswers;
+  symptomAnswers?: PathwayAnswers;
   screeningId?: string;
   audioChoice?: CareAudioChoice;
   /** SHA-256 only; the uploaded audio itself remains browser-local. */
@@ -74,7 +79,8 @@ export function isCareRecord(value: unknown): value is CareRecord {
     && CARE_PATIENT_ID_PATTERN.test(record.patientId)
     && (record.source === "self" || record.source === "pharmacy")
     && typeof record.area === "string"
-    && Object.values(SAFETY_OUTCOMES).includes(record.screeningOutcome as SafetyOutcome)
+    && (Object.values(SAFETY_OUTCOMES).includes(record.screeningOutcome as SafetyOutcome)
+      || Object.values(CARE_OUTCOMES).includes(record.screeningOutcome as CareOutcome))
     && ["NOT_REQUESTED", "READY_TO_CONTINUE", "PENDING", "FOLLOW_UP_NEEDED", "COMPLETED", "CLOSED"].includes(record.referralStatus ?? "")
     && typeof record.followUpNeeded === "boolean"
     && typeof record.createdAt === "string"
@@ -87,7 +93,10 @@ export function isCareRecord(value: unknown): value is CareRecord {
     && (record.referral === undefined || typeof record.referral === "object")
     && (record.followUp === undefined || typeof record.followUp === "object")
     && (record.pharmacyId === undefined || typeof record.pharmacyId === "string")
-    && (record.phone === undefined || typeof record.phone === "string");
+    && (record.phone === undefined || typeof record.phone === "string")
+    && (record.pathwayId === undefined || isPathwayId(record.pathwayId))
+    && (record.ageBand === undefined || isAgeBand(record.ageBand))
+    && (record.ruleVersion === undefined || typeof record.ruleVersion === "string");
 }
 
 export async function fetchPersistedCareRecord(patientId: string): Promise<CareRecord> {

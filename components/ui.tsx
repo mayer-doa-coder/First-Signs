@@ -11,6 +11,7 @@ export function PageShell({
   children,
   actions,
   icon = "care",
+  showHero = true,
 }: {
   eyebrow: Copy;
   title: Copy;
@@ -18,6 +19,7 @@ export function PageShell({
   children: ReactNode;
   actions?: ReactNode;
   icon?: IconName;
+  showHero?: boolean;
 }) {
   const heroTone = `hero-${icon}`;
   const heroArtwork: Partial<Record<IconName, { src: string; width: number; height: number }>> = {
@@ -30,7 +32,7 @@ export function PageShell({
   const artwork = heroArtwork[icon];
   return (
     <main className="page-shell">
-      <section className={`page-hero ${heroTone} container`} aria-labelledby="page-title">
+      {showHero && <section className={`page-hero ${heroTone} container`} aria-labelledby="page-title">
         <div className="page-hero-copy">
           <div className="eyebrow"><Icon name={icon} /><BilingualText copy={eyebrow} /></div>
           <h1 id="page-title"><BilingualText copy={title} /></h1>
@@ -43,7 +45,7 @@ export function PageShell({
           {artwork ? <Image className="hero-artwork" src={artwork.src} width={artwork.width} height={artwork.height} alt="" /> : <span className="hero-visual-icon"><Icon name={icon} /></span>}
           <span className="hero-visual-line" />
         </div>
-      </section>
+      </section>}
       <div className="container page-content">{children}</div>
     </main>
   );

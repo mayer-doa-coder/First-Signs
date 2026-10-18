@@ -19,9 +19,9 @@ const nextActionContext = {
   SHOW_ANOTHER_CENTRE: "Review another nearby verified centre; the existing referral centre must be changed with help before using it elsewhere.",
   EXPLAIN_EVALUATION: "Explain that referral is not a diagnosis; trained staff review symptoms and choose appropriate tests.",
   PRIVACY_AND_SUPPORT: "Protect the referral QR, consider a trusted companion, and ask for human support if needed.",
-  SEEK_TRANSPORT_SUPPORT: "Review nearby verified centres and ask a trusted person or support worker for travel help; the prototype provides no fare or transport.",
-  EXPLAIN_WHY_EVALUATION_MATTERS: "Explain that screening does not diagnose TB and formal evaluation helps identify the cause and appropriate care.",
-  HUMAN_SUPPORT: "The prototype marks the reason for human support but does not automatically notify a real support team.",
+  SEEK_TRANSPORT_SUPPORT: "Review nearby verified centres and ask a trusted person or support worker for travel help; this service provides no fare or transport.",
+  EXPLAIN_WHY_EVALUATION_MATTERS: "Explain that screening does not diagnose illness and formal evaluation helps identify the cause and appropriate care.",
+  HUMAN_SUPPORT: "The service records the reason for human support but does not automatically notify a support team.",
 } as const;
 
 function errorResponse(error: string, status: number) {

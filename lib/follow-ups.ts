@@ -66,8 +66,8 @@ export const followUpActionCopy: Record<FollowUpAction, { title: Copy; detail: C
   SEEK_TRANSPORT_SUPPORT: {
     title: { bn: "যাতায়াতের সহায়তা বা কাছের বিকল্প দেখুন", en: "Explore travel support or a nearer option" },
     detail: {
-      bn: "কাছের যাচাইকৃত কেন্দ্রগুলো দেখুন এবং যাতায়াতের জন্য বিশ্বাসযোগ্য ব্যক্তি বা সহায়তাকারীর সাহায্য নিন। এই প্রোটোটাইপ নিজে পরিবহন বা ভাড়া দেয় না।",
-      en: "Review nearby verified centres and ask a trusted person or support worker for travel help. This prototype does not provide transport or fares.",
+      bn: "কাছের যাচাইকৃত কেন্দ্রগুলো দেখুন এবং যাতায়াতের জন্য বিশ্বাসযোগ্য ব্যক্তি বা সহায়তাকারীর সাহায্য নিন। এই সেবায় পরিবহন বা ভাড়া দেওয়া হয় না।",
+      en: "Review nearby verified centres and ask a trusted person or support worker for travel help. This service does not provide transport or fares.",
     },
   },
   EXPLAIN_WHY_EVALUATION_MATTERS: {
@@ -80,8 +80,8 @@ export const followUpActionCopy: Record<FollowUpAction, { title: Copy; detail: C
   HUMAN_SUPPORT: {
     title: { bn: "মানবিক সহায়তার জন্য চিহ্নিত করা হয়েছে", en: "Marked for human support" },
     detail: {
-      bn: "আপনার অন্য কারণটি নথিভুক্ত হয়েছে। এটি একটি প্রোটোটাইপ—এখন কোনো বাস্তব সহায়তা দলকে স্বয়ংক্রিয়ভাবে জানানো হয়নি। জরুরি হলে সরাসরি চিকিৎসাসেবা নিন।",
-      en: "Your other reason has been recorded. This is a prototype, so no real support team has been notified automatically. Seek medical care directly if the need is urgent.",
+      bn: "আপনার অন্য কারণটি নথিভুক্ত হয়েছে। কোনো সহায়তা দলকে স্বয়ংক্রিয়ভাবে জানানো হয়নি। জরুরি হলে সরাসরি চিকিৎসাসেবা নিন।",
+      en: "Your other reason has been recorded. No support team has been notified automatically. Seek medical care directly if the need is urgent.",
     },
   },
 };

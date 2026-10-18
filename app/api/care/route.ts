@@ -11,10 +11,13 @@ import {
   REFERRAL_STATUSES,
   REFERRAL_TOKEN_PATTERN,
   type ReferralStatus,
-  type ReferralSymptomAnswers,
   type ReferralView,
 } from "@/lib/referrals";
 import { evaluateSafetyRules, SAFETY_OUTCOMES, type SafetyOutcome } from "@/lib/safety-rules";
+import {
+  CARE_OUTCOMES, evaluateCarePathway, getPathway, isAgeBand, isPathwayId,
+  pathwayAnswersAreValid, type AgeBand, type CareOutcome, type PathwayAnswers, type PathwayId,
+} from "@/lib/care-pathways";
 import { broadAreas } from "@/lib/broad-areas";
 import { getActivePharmacy } from "@/lib/pharmacies";
 import { callReferralRpc, isReferralDatabaseConfigured } from "@/lib/supabase-server";
@@ -31,24 +34,6 @@ type CareRpcRow = Record<string, unknown>;
 
 function errorResponse(error: string, status: number) {
   return NextResponse.json({ error }, { status, headers: responseHeaders });
-}
-
-function isBoolean(value: unknown): value is boolean {
-  return typeof value === "boolean";
-}
-
-function parseAnswers(value: unknown): ReferralSymptomAnswers | null {
-  if (!value || typeof value !== "object") return null;
-  const answers = value as Partial<ReferralSymptomAnswers>;
-  if (!Number.isSafeInteger(answers.coughDays)
-    || Number(answers.coughDays) < 0
-    || Number(answers.coughDays) > 3650
-    || !isBoolean(answers.fever)
-    || !isBoolean(answers.nightSweats)
-    || !isBoolean(answers.weightLoss)
-    || !isBoolean(answers.bloodInSputum)
-    || !isBoolean(answers.tbExposure)) return null;
-  return answers as ReferralSymptomAnswers;
 }
 
 function parseReferral(row: CareRpcRow): ReferralView | null {
@@ -70,6 +55,8 @@ function parseReferral(row: CareRpcRow): ReferralView | null {
     accessToken: String(row.access_token ?? ""),
     status,
     tbCenterId,
+    facilityId: tbCenterId,
+    pathwayId: isPathwayId(row.pathway_id) ? row.pathway_id : "RESPIRATORY_TB",
     centreName: String(row.centre_name ?? ""),
     centreArea: String(row.centre_area ?? ""),
     centreDistrict: String(row.centre_district ?? ""),
@@ -125,8 +112,11 @@ function parseCare(row: CareRpcRow): CareRecord | null {
   const sourceType = row.source_type;
   const pharmacyId = row.pharmacy_id === null ? undefined : String(row.pharmacy_id ?? "");
   const area = String(row.area_name ?? "");
-  const answers = parseAnswers(row.symptom_answers);
-  const outcome = String(row.screening_result ?? "") as SafetyOutcome;
+  const pathwayId: PathwayId = isPathwayId(row.pathway_id) ? row.pathway_id : "RESPIRATORY_TB";
+  const ageBand: AgeBand = isAgeBand(row.age_band) ? row.age_band : "ADULT";
+  const answers = pathwayAnswersAreValid(pathwayId, row.symptom_answers) ? row.symptom_answers as PathwayAnswers : null;
+  const outcome = String(row.screening_result ?? "") as SafetyOutcome | CareOutcome;
+  const isLegacyOutcome = Object.values(SAFETY_OUTCOMES).includes(outcome as SafetyOutcome);
   const audioChoice = row.audio_status;
   const audioHash = row.audio_file_hash === null ? undefined : String(row.audio_file_hash ?? "");
   const createdAt = String(row.screening_created_at ?? "");
@@ -139,8 +129,10 @@ function parseCare(row: CareRpcRow): CareRecord | null {
     || (sourceType === "SELF" ? pharmacyId !== undefined : !getActivePharmacy(pharmacyId))
     || !broadAreas.some((candidate) => candidate.id === area)
     || !answers
-    || !Object.values(SAFETY_OUTCOMES).includes(outcome)
-    || evaluateSafetyRules(answers) !== outcome
+    || (!isLegacyOutcome && !Object.values(CARE_OUTCOMES).includes(outcome as CareOutcome))
+    || (isLegacyOutcome
+      ? evaluateSafetyRules(answers as Parameters<typeof evaluateSafetyRules>[0]) !== outcome
+      : evaluateCarePathway(pathwayId, ageBand, answers) !== outcome)
     || (audioChoice !== "recorded" && audioChoice !== "uploaded" && audioChoice !== "skipped")
     || (audioHash !== undefined && (!AUDIO_HASH_PATTERN.test(audioHash) || audioChoice !== "uploaded"))
     || Number.isNaN(Date.parse(createdAt))
@@ -159,6 +151,9 @@ function parseCare(row: CareRpcRow): CareRecord | null {
     source: sourceType === "SELF" ? "self" : "pharmacy",
     ...(pharmacyId ? { pharmacyId } : {}),
     area,
+    pathwayId,
+    ruleVersion: typeof row.rule_version === "string" ? row.rule_version : getPathway(pathwayId).ruleVersion,
+    ageBand,
     screeningOutcome: outcome,
     symptomAnswers: answers,
     screeningId,

@@ -9,7 +9,8 @@ import { Icon } from "@/components/icons";
 import { ActionLink, ClayCard, DemoNotice, PageShell, StatusPill } from "@/components/ui";
 import { careLinkFor, loadActiveCareRecord, saveCareRecord, type CareRecord } from "@/lib/care-session";
 import { fetchReferral, referralLinkFor, type ReferralStatus, type ReferralView } from "@/lib/referrals";
-import { getTbCentre } from "@/lib/tb-centres";
+import { facilityServiceForPathway, getTbCentre } from "@/lib/tb-centres";
+import { getPathway } from "@/lib/care-pathways";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -105,7 +106,10 @@ export function ReferralTicket({ initialToken, qrBaseUrl }: { initialToken?: str
   const centreName = centre?.name[language] ?? referral?.centreName;
   const centreArea = centre?.area[language] ?? referral?.centreArea;
   const centreDistrict = centre?.district[language] ?? referral?.centreDistrict;
-  const serviceType = centre?.serviceType[language] ?? referral?.serviceType;
+  const serviceType = centre && referral
+    ? facilityServiceForPathway(centre, referral.pathwayId)[language]
+    : referral?.serviceType;
+  const pathway = referral ? getPathway(referral.pathwayId) : null;
 
   if (loading && !referral) {
     return (
@@ -139,8 +143,8 @@ export function ReferralTicket({ initialToken, qrBaseUrl }: { initialToken?: str
   return (
     <PageShell
       eyebrow={{ bn: "রেফারেল", en: "Referral" }}
-      title={{ bn: "আনুষ্ঠানিক যক্ষ্মা মূল্যায়নের রেফারেল", en: "Referral for formal TB evaluation" }}
-      description={{ bn: "এই কিউআর বা রেফারেল আইডি সেবাকেন্দ্রে দেখান। এটি যক্ষ্মা রোগ নির্ণয় নয়।", en: "Show this QR or referral ID at the TB centre. It is not a TB diagnosis." }}
+      title={{ bn: "পেশাদার স্বাস্থ্য মূল্যায়নের রেফারেল", en: "Referral for professional health evaluation" }}
+      description={{ bn: "এই কিউআর বা রেফারেল আইডি সেবাকেন্দ্রে দেখান। এটি কোনো রোগ নির্ণয় নয়।", en: "Show this QR or referral ID at the care facility. It is not a diagnosis." }}
       icon="document"
     >
       <DemoNotice />
@@ -181,7 +185,8 @@ export function ReferralTicket({ initialToken, qrBaseUrl }: { initialToken?: str
             </div>
 
             <dl className="detail-list referral-detail-list">
-              <div><dt><BilingualText copy={{ bn: "সেবাকেন্দ্র", en: "TB centre" }} /></dt><dd>{centreName}</dd></div>
+              {pathway && <div><dt><BilingualText copy={{ bn: "সেবার পথ", en: "Care pathway" }} /></dt><dd><BilingualText copy={pathway.label} /></dd></div>}
+              <div><dt><BilingualText copy={{ bn: "সেবাকেন্দ্র", en: "Care facility" }} /></dt><dd>{centreName}</dd></div>
               <div><dt><BilingualText copy={{ bn: "অবস্থান", en: "Location" }} /></dt><dd>{centreArea} · {centreDistrict}</dd></div>
               <div><dt><BilingualText copy={{ bn: "সেবার ধরন", en: "Service type" }} /></dt><dd>{serviceType}</dd></div>
               <div><dt><BilingualText copy={{ bn: "বর্তমান অবস্থা", en: "Current status" }} /></dt><dd><BilingualText copy={statusCopy[referral.status]} /> <span lang="en">({referral.status})</span></dd></div>
@@ -190,7 +195,7 @@ export function ReferralTicket({ initialToken, qrBaseUrl }: { initialToken?: str
 
           <div className="ticket-footer">
             <Icon name="shield" />
-            <p><BilingualText copy={{ bn: "কিউআরটিতে রোগীর নাম, ফোন, উপসর্গ বা অডিও নেই। রেফারেলটি আনুষ্ঠানিক মূল্যায়নে যাওয়ার জন্য—রোগ নির্ণয়ের ফল নয়।", en: "The QR contains no patient name, phone number, symptoms, or audio. This referral supports reaching formal evaluation; it is not a diagnosis." }} /></p>
+            <p><BilingualText copy={{ bn: "কিউআরটিতে রোগীর নাম, ফোন, উপসর্গ বা অডিও নেই। রেফারেলটি পেশাদার মূল্যায়নে যাওয়ার জন্য—রোগ নির্ণয়ের ফল নয়।", en: "The QR contains no patient name, phone number, symptoms, or audio. This referral supports reaching professional evaluation; it is not a diagnosis." }} /></p>
           </div>
         </ClayCard>
 

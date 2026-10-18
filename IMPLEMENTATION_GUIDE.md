@@ -1,5 +1,32 @@
 # First Signs — Updated Implementation Guide
 
+## Multi-Syndrome Expansion (October 2026)
+
+The web entry flow now begins with five non-diagnostic care pathways defined in
+`lib/care-pathways.ts`. Each pathway has a versioned deterministic rule,
+English/Bangla copy, age band, urgent precedence, and a generic care outcome.
+The respiratory/TB pathway retains optional cough audio; no other pathway asks
+for audio.
+
+The web client submits an anonymous early signal to `/api/signals` after
+consent and minimum triage, then saves the full private screening through
+`/api/screenings`. Referrals continue through `/api/referrals`, the existing
+transactional `JVH-KHU-*` counter, QR token, follow-up, attendance verification,
+and pharmacy-only simulated reward workflow.
+
+The additive migrations beginning with
+`20261018143000_add_multisyndrome_care_navigation.sql` generalize the existing
+tables without renaming or removing TB columns. `tb_center_id` remains as a
+compatibility field while `facility_id` and `supported_pathways` express the
+shared care-facility model. Compatibility triggers allow the existing Telegram
+TB implementation to keep using the legacy functions until it is deliberately
+upgraded.
+
+The government dashboard reads only anonymous aggregates. The displayed 3/5
+seven-day multi-pathway warning is generated exclusively from rows marked as
+synthetic demo data. Real care signals are stored for later reviewed analytics
+and are not classified as outbreaks or hotspots.
+
 This guide is a practical implementation checklist for the hackathon prototype.
 
 You do **not** have to follow every step rigidly. Use the steps as a guide, move back and forth when needed, and correct things as you build.

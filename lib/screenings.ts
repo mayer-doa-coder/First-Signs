@@ -1,5 +1,4 @@
-import type { ReferralSymptomAnswers } from "@/lib/referrals";
-import type { SafetyOutcome } from "@/lib/safety-rules";
+import type { AgeBand, CareOutcome, PathwayAnswers, PathwayId } from "@/lib/care-pathways";
 
 export type SaveScreeningInput = {
   screeningId: string;
@@ -9,10 +8,13 @@ export type SaveScreeningInput = {
   areaName: string;
   areaLatitude: number;
   areaLongitude: number;
-  symptomAnswers: ReferralSymptomAnswers;
+  pathwayId: PathwayId;
+  ruleVersion: string;
+  ageBand: AgeBand;
+  symptomAnswers: PathwayAnswers;
   audioStatus: "recorded" | "uploaded" | "skipped";
   audioHash?: string;
-  screeningResult: SafetyOutcome;
+  screeningResult: CareOutcome;
 };
 
 export type SavedScreening = {

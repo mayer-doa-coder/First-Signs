@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
 import { broadAreas } from "@/lib/broad-areas";
 import { getActivePharmacy } from "@/lib/pharmacies";
-import type { ReferralSymptomAnswers } from "@/lib/referrals";
-import { evaluateSafetyRules, SAFETY_OUTCOMES } from "@/lib/safety-rules";
+import {
+  CARE_OUTCOMES,
+  evaluateCarePathway,
+  getPathway,
+  isAgeBand,
+  isPathwayId,
+  pathwayAnswersAreValid,
+} from "@/lib/care-pathways";
 import type { SaveScreeningInput, SavedScreening } from "@/lib/screenings";
 import { callReferralRpc, isReferralDatabaseConfigured } from "@/lib/supabase-server";
 
@@ -17,23 +23,6 @@ function errorResponse(error: string, status: number) {
   return NextResponse.json({ error }, { status, headers: responseHeaders });
 }
 
-function isBoolean(value: unknown): value is boolean {
-  return typeof value === "boolean";
-}
-
-function isSymptomAnswers(value: unknown): value is ReferralSymptomAnswers {
-  if (!value || typeof value !== "object") return false;
-  const answers = value as Partial<ReferralSymptomAnswers>;
-  return Number.isSafeInteger(answers.coughDays)
-    && Number(answers.coughDays) >= 0
-    && Number(answers.coughDays) <= 3650
-    && isBoolean(answers.fever)
-    && isBoolean(answers.nightSweats)
-    && isBoolean(answers.weightLoss)
-    && isBoolean(answers.bloodInSputum)
-    && isBoolean(answers.tbExposure);
-}
-
 function parseInput(value: unknown): SaveScreeningInput | null {
   if (!value || typeof value !== "object") return null;
   const input = value as Partial<SaveScreeningInput>;
@@ -45,7 +34,9 @@ function parseInput(value: unknown): SaveScreeningInput | null {
   const audioValid = input.audioStatus === "recorded"
     || input.audioStatus === "uploaded"
     || input.audioStatus === "skipped";
-  const resultValid = Object.values(SAFETY_OUTCOMES).includes(input.screeningResult as never);
+  const pathwayValid = isPathwayId(input.pathwayId);
+  const ageValid = isAgeBand(input.ageBand);
+  const resultValid = Object.values(CARE_OUTCOMES).includes(input.screeningResult as never);
   const hashValid = input.audioHash === undefined || AUDIO_HASH_PATTERN.test(input.audioHash);
 
   if (!PATIENT_ID_PATTERN.test(input.patientId ?? "")
@@ -55,12 +46,15 @@ function parseInput(value: unknown): SaveScreeningInput | null {
     || !area
     || !audioValid
     || !hashValid
+    || !pathwayValid
+    || !ageValid
     || !resultValid
-    || !isSymptomAnswers(input.symptomAnswers)) return null;
+    || input.ruleVersion !== getPathway(input.pathwayId!).ruleVersion
+    || !pathwayAnswersAreValid(input.pathwayId!, input.symptomAnswers)) return null;
 
   if (input.areaLatitude !== area.latitude || input.areaLongitude !== area.longitude) return null;
   if (input.audioHash !== undefined && input.audioStatus !== "uploaded") return null;
-  if (evaluateSafetyRules(input.symptomAnswers) !== input.screeningResult) return null;
+  if (evaluateCarePathway(input.pathwayId!, input.ageBand!, input.symptomAnswers!) !== input.screeningResult) return null;
   return input as SaveScreeningInput;
 }
 
@@ -107,11 +101,14 @@ export async function POST(request: Request) {
   if (!isReferralDatabaseConfigured()) return errorResponse("SCREENING_BACKEND_NOT_CONFIGURED", 503);
 
   try {
-    const rows = await callReferralRpc("save_part11_screening", {
+    const rows = await callReferralRpc("save_multisyndrome_screening", {
       p_screening_id: input.screeningId,
       p_patient_id: input.patientId,
       p_source_type: input.sourceType,
       p_pharmacy_id: input.pharmacyId ?? null,
+      p_pathway_id: input.pathwayId,
+      p_rule_version: input.ruleVersion,
+      p_age_band: input.ageBand,
       p_area_name: input.areaName,
       p_area_latitude: input.areaLatitude,
       p_area_longitude: input.areaLongitude,

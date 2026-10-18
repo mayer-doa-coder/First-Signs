@@ -1,4 +1,5 @@
 import type { BroadAreaId } from "@/lib/broad-areas";
+import type { PathwayId } from "@/lib/care-pathways";
 
 export type HotspotLevel = "NORMAL" | "WATCH" | "RED";
 
@@ -29,7 +30,26 @@ export type GovernmentDashboardData = {
     pharmaciesRequiringReview: number;
     heldRewardCount: number;
   };
+  pathwayActivity: Array<{
+    pathwayId: PathwayId;
+    areaId: BroadAreaId;
+    signalCount: number;
+    urgentCount: number;
+    signalLevel: HotspotLevel;
+    isDemo: boolean;
+  }>;
+  recentActions: Array<{
+    actionId: string;
+    pathwayId: PathwayId;
+    areaId: BroadAreaId;
+    actionType: PublicHealthActionType;
+    note: string | null;
+    recordedAt: string;
+  }>;
 };
+
+export const PUBLIC_HEALTH_ACTION_TYPES = ["REVIEW_SIGNAL", "CHECK_WATER_SAFETY", "ARRANGE_OUTREACH", "CHECK_TESTING_ACCESS", "MOBILE_SERVICE", "CLOSE_REVIEW"] as const;
+export type PublicHealthActionType = (typeof PUBLIC_HEALTH_ACTION_TYPES)[number];
 
 export async function fetchGovernmentDashboard(): Promise<GovernmentDashboardData> {
   const response = await fetch("/api/dashboard", { cache: "no-store" });
@@ -43,4 +63,9 @@ export async function fetchGovernmentDashboard(): Promise<GovernmentDashboardDat
   }
 
   return body.dashboard;
+}
+
+export async function recordPublicHealthAction(input: { pathwayId: PathwayId; areaId: BroadAreaId; actionType: PublicHealthActionType; note?: string }) {
+  const response = await fetch("/api/dashboard", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) });
+  if (!response.ok) throw new Error("PUBLIC_HEALTH_ACTION_FAILED");
 }

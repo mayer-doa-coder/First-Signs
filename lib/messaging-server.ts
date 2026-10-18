@@ -2,6 +2,20 @@ import "server-only";
 
 import { createHmac, randomBytes } from "node:crypto";
 import { getBroadArea, screeningAreas } from "@/lib/broad-areas";
+import {
+  CARE_OUTCOMES,
+  evaluateCarePathway,
+  getPathway,
+  isAgeBand,
+  isPathwayId,
+  outcomeNeedsReferral,
+  pathwayAnswersAreValid,
+  pathwayDefinitions,
+  type AgeBand,
+  type CareOutcome,
+  type PathwayAnswers,
+  type PathwayId,
+} from "@/lib/care-pathways";
 import { processChannelAudio } from "@/lib/channel-audio";
 import { analyzeWithHear, type HearResult } from "@/lib/hear-audio";
 import { followUpActionCopy, type FollowUpAction, type FollowUpBarrier } from "@/lib/follow-ups";
@@ -9,13 +23,16 @@ import { getActivePharmacy } from "@/lib/pharmacies";
 import type { ReferralSymptomAnswers } from "@/lib/referrals";
 import { evaluateSafetyRules, SAFETY_OUTCOMES, type SafetyOutcome } from "@/lib/safety-rules";
 import { callReferralRpc, callSupabaseRpc, isReferralDatabaseConfigured } from "@/lib/supabase-server";
-import { getRecommendedCentre } from "@/lib/tb-centres";
+import { getRecommendedCentre, getRecommendedFacility } from "@/lib/tb-centres";
 
 export type MessagingProvider = "TELEGRAM";
 type ChannelLanguage = "bn" | "en";
 type ChannelStage =
   | "AWAITING_LANGUAGE"
   | "AWAITING_CONSENT"
+  | "AWAITING_PATHWAY"
+  | "AWAITING_AGE_BAND"
+  | "PATHWAY_QUESTION"
   | "COUGH_DAYS"
   | "FEVER"
   | "NIGHT_SWEATS"
@@ -31,11 +48,14 @@ type ChannelStage =
 
 type ChannelState = {
   screeningId: string;
-  answers?: Partial<ReferralSymptomAnswers>;
+  answers?: PathwayAnswers;
+  pathwayId?: PathwayId;
+  ageBand?: AgeBand;
+  questionIndex?: number;
   areaName?: string;
   audioStatus?: "uploaded" | "skipped";
   audioHash?: string;
-  screeningOutcome?: SafetyOutcome;
+  screeningOutcome?: SafetyOutcome | CareOutcome;
   referralId?: string;
   accessToken?: string;
   tbCenterId?: string;
@@ -70,7 +90,7 @@ export type ChannelEventResult = {
 };
 
 const STAGES = new Set<ChannelStage>([
-  "AWAITING_LANGUAGE", "AWAITING_CONSENT", "COUGH_DAYS", "FEVER",
+  "AWAITING_LANGUAGE", "AWAITING_CONSENT", "AWAITING_PATHWAY", "AWAITING_AGE_BAND", "PATHWAY_QUESTION", "COUGH_DAYS", "FEVER",
   "NIGHT_SWEATS", "WEIGHT_LOSS", "BLOOD_IN_SPUTUM", "TB_EXPOSURE",
   "AREA", "AUDIO", "REFERRAL_CHOICE", "FOLLOW_UP_BARRIER", "COMPLETE", "STOPPED",
 ]);
@@ -174,11 +194,20 @@ function initialSession(
 
 function languagePrompt() {
   return [
-    "First Signs — screening and care navigation. This does not diagnose TB.",
+    "First Signs supports care navigation for respiratory/TB concerns, fever or mosquito-borne concerns, diarrhoea/dehydration, skin or nerve concerns, and child breathing concerns. It does not diagnose illness.",
+    "Telegram currently guides the respiratory/TB pathway. Use the website for the other pathways, current service information, and updates.",
     "Send ENGLISH or BANGLA to choose your language.",
-    "ফার্স্ট সাইনস — স্ক্রিনিং ও সেবার দিকনির্দেশনা। এটি যক্ষ্মা রোগ নির্ণয় করে না।",
+    "ফার্স্ট সাইনস শ্বাসতন্ত্র/যক্ষ্মা, জ্বর বা মশাবাহিত অসুস্থতার উদ্বেগ, ডায়রিয়া/পানিশূন্যতা, ত্বক বা স্নায়ুর উদ্বেগ এবং শিশুর শ্বাসকষ্টের জন্য সেবার দিকনির্দেশনা দেয়। এটি রোগ নির্ণয় করে না।",
+    "টেলিগ্রামে বর্তমানে শ্বাসতন্ত্র/যক্ষ্মা পথটি আছে। অন্যান্য পথ, বর্তমান সেবার তথ্য ও হালনাগাদের জন্য ওয়েবসাইট ব্যবহার করুন।",
     `Website backup: ${absoluteWebLink("/screen?source=self")}`,
   ].join("\n\n");
+}
+
+function updatesPrompt(language: ChannelLanguage) {
+  return textFor(language, {
+    bn: `বর্তমান সেবার তথ্য\n• টেলিগ্রাম: শ্বাসতন্ত্র/যক্ষ্মা স্ক্রিনিং, রেফারেল ও ফলো-আপ\n• ওয়েবসাইট: শ্বাসতন্ত্র/যক্ষ্মা, জ্বর বা মশাবাহিত অসুস্থতার উদ্বেগ, ডায়রিয়া/পানিশূন্যতা, ত্বক বা স্নায়ুর উদ্বেগ এবং শিশুর শ্বাসকষ্টের পথ\n• কোনো পথই রোগ নির্ণয় করে না; জরুরি উপসর্গ হলে দ্রুত চিকিৎসা নিন।\n\nওয়েবসাইট: ${absoluteWebLink("/screen?source=self")}\nনতুন শ্বাসতন্ত্র/যক্ষ্মা স্ক্রিনিং শুরু করতে START SELF লিখুন।`,
+    en: `Current service information\n• Telegram: respiratory/TB screening, referral, and follow-up\n• Website: respiratory/TB, fever or mosquito-borne, diarrhoea/dehydration, skin or nerve, and child breathing pathways\n• No pathway diagnoses illness; seek urgent care promptly for emergency symptoms.\n\nWebsite: ${absoluteWebLink("/screen?source=self")}\nSend START SELF to begin a new respiratory/TB screening.`,
+  });
 }
 
 function languageChangedPrompt(language: ChannelLanguage) {
@@ -299,8 +328,8 @@ function consentPrompt(session: ChannelSession) {
         en: "You are checking from your own device.",
       });
   return `${entry}\n\n${textFor(session.language, {
-    bn: "এটি স্ক্রিনিং ও সেবার দিকনির্দেশনা—যক্ষ্মা রোগ নির্ণয় নয়। আপনি যেকোনো সময় থামতে পারেন। সম্মত হলে 1, থামতে 2 লিখুন।",
-    en: "This is screening and care navigation—not a TB diagnosis. You can stop at any time. Send 1 to agree and continue, or 2 to stop.",
+    bn: "এটি শ্বাসতন্ত্র/যক্ষ্মা স্ক্রিনিং ও সেবার দিকনির্দেশনা—রোগ নির্ণয় নয়। অন্যান্য স্বাস্থ্য-পথ ও বর্তমান সেবার তথ্যের জন্য HELP লিখুন। আপনি যেকোনো সময় থামতে পারেন। সম্মত হলে 1, থামতে 2 লিখুন।",
+    en: "This is respiratory/TB screening and care navigation—not a diagnosis. Send HELP for the other health pathways and current service information. You can stop at any time. Send 1 to agree and continue, or 2 to stop.",
   })}`;
 }
 
@@ -334,6 +363,49 @@ function fullAnswers(session: ChannelSession): ReferralSymptomAnswers {
   return answers as ReferralSymptomAnswers;
 }
 
+function selectedPathway(session: ChannelSession) {
+  const pathwayId = session.state.pathwayId;
+  if (!isPathwayId(pathwayId)) throw new Error("CHANNEL_PATHWAY_INVALID");
+  return getPathway(pathwayId);
+}
+
+function selectedAgeBand(session: ChannelSession) {
+  const ageBand = session.state.ageBand;
+  if (!isAgeBand(ageBand)) throw new Error("CHANNEL_AGE_BAND_INVALID");
+  return ageBand;
+}
+
+function selectedAnswers(session: ChannelSession) {
+  const pathway = selectedPathway(session);
+  if (!pathwayAnswersAreValid(pathway.id, session.state.answers)) throw new Error("CHANNEL_ANSWERS_INCOMPLETE");
+  return session.state.answers;
+}
+
+function pathwayChoicePrompt(language: ChannelLanguage) {
+  return `${textFor(language, {
+    bn: "আপনার প্রধান স্বাস্থ্য উদ্বেগটি বেছে নিন:",
+    en: "Choose the health concern you want to check:",
+  })}\n${pathwayDefinitions.map((pathway, index) => `${index + 1} ${pathway.label[language]}`).join("\n")}`;
+}
+
+function ageBandPrompt(language: ChannelLanguage) {
+  return textFor(language, {
+    bn: "যার জন্য যাচাই করছেন তার বয়সের ধরন বেছে নিন:\n1 ৫ বছরের কম\n2 ৫–১৭ বছর\n3 ১৮ বছর বা বেশি",
+    en: "Choose the person's age group:\n1 Under 5 years\n2 5–17 years\n3 18 years or older",
+  });
+}
+
+function pathwayQuestionPrompt(session: ChannelSession) {
+  const pathway = selectedPathway(session);
+  const question = pathway.questions[session.state.questionIndex ?? 0];
+  if (!question) throw new Error("CHANNEL_QUESTION_INVALID");
+  return yesNoPrompt(session.language, question.label);
+}
+
+function areaPrompt(language: ChannelLanguage) {
+  return `${textFor(language, { bn: "আপনি এখন কোন বিভাগে আছেন?", en: "Which division are you currently in?" })}\n${screeningAreas.map((area, index) => `${index + 1} ${area.label[language]}`).join("\n")}`;
+}
+
 async function persistScreening(session: ChannelSession, outcome: SafetyOutcome) {
   const area = getBroadArea(session.state.areaName);
   if (!area) throw new Error("CHANNEL_AREA_INVALID");
@@ -348,6 +420,30 @@ async function persistScreening(session: ChannelSession, outcome: SafetyOutcome)
     p_area_latitude: area.latitude,
     p_area_longitude: area.longitude,
     p_symptom_answers: fullAnswers(session),
+    p_audio_status: audioStatus,
+    p_audio_hash: session.state.audioHash ?? null,
+    p_screening_result: outcome,
+  });
+}
+
+async function persistPathwayScreening(session: ChannelSession, outcome: CareOutcome) {
+  const area = getBroadArea(session.state.areaName);
+  const pathway = selectedPathway(session);
+  const ageBand = selectedAgeBand(session);
+  if (!area) throw new Error("CHANNEL_AREA_INVALID");
+  const audioStatus = session.state.audioStatus ?? "skipped";
+  await callReferralRpc("save_multisyndrome_screening", {
+    p_screening_id: session.state.screeningId,
+    p_patient_id: session.patientId,
+    p_source_type: session.sourceType,
+    p_pharmacy_id: session.pharmacyId ?? null,
+    p_pathway_id: pathway.id,
+    p_rule_version: pathway.ruleVersion,
+    p_age_band: ageBand,
+    p_area_name: area.id,
+    p_area_latitude: area.latitude,
+    p_area_longitude: area.longitude,
+    p_symptom_answers: selectedAnswers(session),
     p_audio_status: audioStatus,
     p_audio_hash: session.state.audioHash ?? null,
     p_screening_result: outcome,
@@ -390,10 +486,76 @@ async function completeAudioStep(session: ChannelSession) {
   })}`;
 }
 
+function pathwayResultText(session: ChannelSession, outcome: CareOutcome) {
+  if (outcome === CARE_OUTCOMES.URGENT) return textFor(session.language, {
+    bn: "আপনার উত্তরে দ্রুত চিকিৎসা মূল্যায়নের প্রয়োজন হতে পারে। গুরুতর উপসর্গ থাকলে এখনই ৯৯৯-এ কল করুন বা হাসপাতালের জরুরি বিভাগে যান। এটি রোগ নির্ণয় নয়।",
+    en: "Your answers may need prompt medical evaluation. For severe symptoms, call 999 or go to an emergency department now. This is not a diagnosis.",
+  });
+  if (outcome === CARE_OUTCOMES.EVALUATION) return textFor(session.language, {
+    bn: "আপনার উত্তরের ভিত্তিতে পেশাদার মূল্যায়নের পরামর্শ দেওয়া হচ্ছে। এটি রোগ নির্ণয় নয়।",
+    en: "Based on your answers, professional evaluation is recommended. This is not a diagnosis.",
+  });
+  return textFor(session.language, {
+    bn: "বর্তমান উত্তরে পেশাদার মূল্যায়নের নির্দিষ্ট মানদণ্ড মেলেনি। উপসর্গ থাকলে, বাড়লে বা উদ্বেগ হলে চিকিৎসাসেবা নিন।",
+    en: "Your answers did not meet a fixed professional-evaluation criterion. Seek medical care if symptoms persist, worsen, or concern you.",
+  });
+}
+
+async function completePathwayScreening(session: ChannelSession) {
+  const pathway = selectedPathway(session);
+  const outcome = evaluateCarePathway(pathway.id, selectedAgeBand(session), selectedAnswers(session));
+  await persistPathwayScreening(session, outcome);
+  session.state.screeningOutcome = outcome;
+  if (!outcomeNeedsReferral(outcome)) {
+    session.stage = "COMPLETE";
+    return `${pathwayResultText(session, outcome)}\n\n${textFor(session.language, { bn: "আপনার সেবার তথ্য:", en: "Your care information:" })} ${careLink(session)}`;
+  }
+  session.stage = "REFERRAL_CHOICE";
+  return `${pathwayResultText(session, outcome)}\n\n${textFor(session.language, {
+    bn: "নিকটবর্তী যাচাইকৃত সেবাকেন্দ্রে রেফারেল তৈরি করতে 1, এখন না করতে 2 লিখুন।",
+    en: "Send 1 to create a referral to a nearby verified care facility, or 2 for not now.",
+  })}`;
+}
+
 async function createReferral(session: ChannelSession) {
   const area = getBroadArea(session.state.areaName);
   const outcome = session.state.screeningOutcome;
-  if (!area || !outcome || outcome === SAFETY_OUTCOMES.CONTINUE) throw new Error("CHANNEL_REFERRAL_INVALID");
+  if (!area || !outcome || outcome === SAFETY_OUTCOMES.CONTINUE || outcome === CARE_OUTCOMES.CONTINUE) throw new Error("CHANNEL_REFERRAL_INVALID");
+  const pathwayId = session.state.pathwayId;
+  if (isPathwayId(pathwayId) && isAgeBand(session.state.ageBand) && Object.values(CARE_OUTCOMES).includes(outcome as CareOutcome)) {
+    const recommended = getRecommendedFacility(area, pathwayId);
+    if (!recommended) throw new Error("CHANNEL_CENTRE_NOT_FOUND");
+    const rows = await callReferralRpc<Record<string, unknown>>("create_multisyndrome_referral", {
+      p_screening_id: session.state.screeningId,
+      p_patient_id: session.patientId,
+      p_source_type: session.sourceType,
+      p_pharmacy_id: session.pharmacyId ?? null,
+      p_pathway_id: pathwayId,
+      p_rule_version: selectedPathway(session).ruleVersion,
+      p_age_band: session.state.ageBand,
+      p_area_name: area.id,
+      p_area_latitude: area.latitude,
+      p_area_longitude: area.longitude,
+      p_symptom_answers: selectedAnswers(session),
+      p_audio_status: session.state.audioStatus ?? "skipped",
+      p_audio_hash: session.state.audioHash ?? null,
+      p_screening_result: outcome,
+      p_tb_center_id: recommended.centre.id,
+    });
+    const row = rows[0];
+    const referralId = String(row?.referral_id ?? "");
+    const accessToken = String(row?.access_token ?? "");
+    if (!/^JVH-KHU-\d{5,}$/.test(referralId) || !UUID_PATTERN.test(accessToken)) throw new Error("CHANNEL_REFERRAL_RESPONSE_INVALID");
+    session.state.referralId = referralId;
+    session.state.accessToken = accessToken;
+    session.state.tbCenterId = recommended.centre.id;
+    session.stage = "COMPLETE";
+    const referralUrl = absoluteWebLink(`/referral?${new URLSearchParams({ token: accessToken })}`);
+    return textFor(session.language, {
+      bn: `রেফারেল তৈরি হয়েছে: ${referralId}\nসেবাকেন্দ্র: ${recommended.centre.name.bn}\nরেফারেল ও QR: ${referralUrl}\nআমার সেবা: ${careLink(session)}\nএটি রোগ নির্ণয় নয়। উপস্থিত হতে না পারলে MISSED লিখুন।`,
+      en: `Referral created: ${referralId}\nCare facility: ${recommended.centre.name.en}\nReferral and QR: ${referralUrl}\nMy Care: ${careLink(session)}\nThis is not a diagnosis. Send MISSED if you could not attend.`,
+    });
+  }
   const recommended = getRecommendedCentre(area);
   if (!recommended) throw new Error("CHANNEL_CENTRE_NOT_FOUND");
   const rows = await callReferralRpc<Record<string, unknown>>("create_part9_referral", {
@@ -436,6 +598,8 @@ async function careStatusResponse(session: ChannelSession) {
     bn: "এখনো কোনো সম্পূর্ণ স্ক্রিনিং সংরক্ষিত হয়নি।", en: "No completed screening has been saved yet.",
   });
   const outcome = String(row.screening_result ?? "") as SafetyOutcome;
+  const pathwayId = row.pathway_id;
+  const careOutcome = String(row.care_outcome ?? row.screening_result ?? "") as CareOutcome;
   const referralStatus = row.referral_status === null ? "NOT_REQUESTED" : String(row.referral_status);
   const nextAction = row.next_action === null ? null : String(row.next_action) as FollowUpAction;
   const statusText = referralStatus === "COMPLETED"
@@ -448,7 +612,10 @@ async function careStatusResponse(session: ChannelSession) {
   const next = nextAction && followUpActionCopy[nextAction]
     ? `\n${textFor(session.language, followUpActionCopy[nextAction].title)}`
     : "";
-  return `${resultText(session, outcome)}\n${statusText}${next}\n${careLink(session)}`;
+  const outcomeText = isPathwayId(pathwayId) && Object.values(CARE_OUTCOMES).includes(careOutcome)
+    ? pathwayResultText(session, careOutcome)
+    : resultText(session, outcome);
+  return `${outcomeText}\n${statusText}${next}\n${careLink(session)}`;
 }
 
 const barrierByChoice: Record<string, FollowUpBarrier> = {
@@ -503,6 +670,9 @@ async function processTurn(session: ChannelSession, event: IncomingChannelEvent)
   if (command === "LANGUAGE" || command === "/LANGUAGE" || command === "ভাষা") {
     return { session, response: languagePrompt(), changed: false };
   }
+  if (command === "HELP" || command === "/HELP" || command === "UPDATES" || command === "/UPDATES" || command === "তথ্য") {
+    return { session, response: updatesPrompt(session.language), changed: false };
+  }
   if (session.stage !== "AWAITING_LANGUAGE" && command === "ENGLISH") {
     session.language = "en";
     return { session, response: languageChangedPrompt(session.language), changed: true };
@@ -551,11 +721,55 @@ async function processTurn(session: ChannelSession, event: IncomingChannelEvent)
         });
         break;
       }
-      session.stage = "COUGH_DAYS";
-      response = textFor(session.language, {
-        bn: "আপনার কাশি কত দিন ধরে? পূর্ণ সংখ্যা লিখুন—কাশি না থাকলে 0।",
-        en: "How many days have you had a cough? Send a whole number, or 0 for no cough.",
-      });
+      session.stage = "AWAITING_PATHWAY";
+      response = pathwayChoicePrompt(session.language);
+      break;
+    }
+    case "AWAITING_PATHWAY": {
+      const pathway = pathwayDefinitions[Number(normalizeBanglaDigits(rawText)) - 1];
+      if (!pathway) return { session, response: pathwayChoicePrompt(session.language), changed: false };
+      session.state.pathwayId = pathway.id;
+      session.state.answers = {};
+      session.state.questionIndex = 0;
+      session.stage = "AWAITING_AGE_BAND";
+      response = ageBandPrompt(session.language);
+      break;
+    }
+    case "AWAITING_AGE_BAND": {
+      const ageBands: readonly AgeBand[] = ["UNDER_5", "AGE_5_TO_17", "ADULT"];
+      const ageBand = ageBands[Number(normalizeBanglaDigits(rawText)) - 1];
+      if (!ageBand) return { session, response: ageBandPrompt(session.language), changed: false };
+      session.state.ageBand = ageBand;
+      session.state.questionIndex = 0;
+      if (selectedPathway(session).requiresCoughDays) {
+        session.stage = "COUGH_DAYS";
+        response = textFor(session.language, {
+          bn: "আপনার কাশি কত দিন ধরে? পূর্ণ সংখ্যা লিখুন—কাশি না থাকলে 0।",
+          en: "How many days have you had a cough? Send a whole number, or 0 for no cough.",
+        });
+      } else {
+        session.stage = "PATHWAY_QUESTION";
+        response = pathwayQuestionPrompt(session);
+      }
+      break;
+    }
+    case "PATHWAY_QUESTION": {
+      const answer = parseYesNo(rawText);
+      if (answer === null) return { session, response: pathwayQuestionPrompt(session), changed: false };
+      const pathway = selectedPathway(session);
+      const questionIndex = session.state.questionIndex ?? 0;
+      const question = pathway.questions[questionIndex];
+      if (!question) throw new Error("CHANNEL_QUESTION_INVALID");
+      session.state.answers = { ...session.state.answers, [question.id]: answer };
+      const nextQuestionIndex = questionIndex + 1;
+      if (nextQuestionIndex < pathway.questions.length) {
+        session.state.questionIndex = nextQuestionIndex;
+        response = pathwayQuestionPrompt(session);
+      } else {
+        session.state.questionIndex = nextQuestionIndex;
+        session.stage = "AREA";
+        response = areaPrompt(session.language);
+      }
       break;
     }
     case "COUGH_DAYS": {
@@ -566,8 +780,14 @@ async function processTurn(session: ChannelSession, event: IncomingChannelEvent)
         }), changed: false };
       }
       session.state.answers = { ...session.state.answers, coughDays: Number(normalized) };
-      session.stage = "FEVER";
-      response = yesNoPrompt(session.language, { bn: "আপনার কি জ্বর আছে?", en: "Do you have a fever?" });
+      if (isPathwayId(session.state.pathwayId)) {
+        session.state.questionIndex = 0;
+        session.stage = "PATHWAY_QUESTION";
+        response = pathwayQuestionPrompt(session);
+      } else {
+        session.stage = "FEVER";
+        response = yesNoPrompt(session.language, { bn: "আপনার কি জ্বর আছে?", en: "Do you have a fever?" });
+      }
       break;
     }
     case "FEVER":
@@ -589,9 +809,7 @@ async function processTurn(session: ChannelSession, event: IncomingChannelEvent)
       const [key, nextStage, prompt] = mapping[session.stage];
       session.state.answers = { ...session.state.answers, [key]: answer };
       session.stage = nextStage;
-      response = prompt
-        ? yesNoPrompt(session.language, prompt)
-        : `${textFor(session.language, { bn: "আপনি এখন কোন বিভাগে আছেন?", en: "Which division are you currently in?" })}\n${screeningAreas.map((area, index) => `${index + 1} ${area.label[session.language]}`).join("\n")}`;
+      response = prompt ? yesNoPrompt(session.language, prompt) : areaPrompt(session.language);
       break;
     }
     case "AREA": {
@@ -601,6 +819,14 @@ async function processTurn(session: ChannelSession, event: IncomingChannelEvent)
         bn: `তালিকা থেকে 1–${screeningAreas.length} লিখুন।`, en: `Send a number from 1–${screeningAreas.length}.`,
       }), changed: false };
       session.state.areaName = area.id;
+      if (isPathwayId(session.state.pathwayId)) {
+        const pathway = selectedPathway(session);
+        if (!pathway.supportsCoughAudio) {
+          session.state.audioStatus = "skipped";
+          response = await completePathwayScreening(session);
+          break;
+        }
+      }
       session.stage = "AUDIO";
       response = textFor(session.language, {
         bn: "ঐচ্ছিক: এখন একটি কাশির ভয়েস মেসেজ পাঠান, অথবা SKIP লিখুন। অডিও কেবল এই অনুরোধে প্রক্রিয়া হবে; ফাইল রাখা হবে না। এটি যক্ষ্মা রোগ নির্ণয় করতে পারে না।",
@@ -654,7 +880,9 @@ async function processTurn(session: ChannelSession, event: IncomingChannelEvent)
           bn: "একটি ভয়েস মেসেজ পাঠান অথবা SKIP লিখুন।", en: "Send a voice message or send SKIP.",
         }), changed: false };
       }
-      response = await completeAudioStep(session);
+      response = isPathwayId(session.state.pathwayId)
+        ? await completePathwayScreening(session)
+        : await completeAudioStep(session);
       if (event.audio) {
         const audioMessage = acousticResult?.available
           ? acousticResult.signal === "COUGH_LIKE_SIGNAL_PRESENT"
@@ -749,7 +977,9 @@ export async function handleChannelEvent(event: IncomingChannelEvent): Promise<C
       session = await saveSession(reset);
       response = consentPrompt(session);
     } else if (sessionWasCreated) {
-      response = consentPrompt(session);
+      const turn = await processTurn(session, event);
+      if (turn.changed) session = await saveSession(turn.session);
+      response = turn.response;
     } else {
       const turn = await processTurn(session, event);
       if (turn.changed) session = await saveSession(turn.session);

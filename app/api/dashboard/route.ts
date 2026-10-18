@@ -3,6 +3,8 @@ import { broadAreas, type BroadAreaId } from "@/lib/broad-areas";
 import type { GovernmentAreaActivity, GovernmentDashboardData, HotspotLevel } from "@/lib/government-dashboard";
 import { callReferralRpc, isReferralDatabaseConfigured } from "@/lib/supabase-server";
 import { currentAuthUser, hasRole, isAccountAuthConfigured } from "@/lib/auth";
+import { isPathwayId } from "@/lib/care-pathways";
+import { PUBLIC_HEALTH_ACTION_TYPES, type PublicHealthActionType } from "@/lib/government-dashboard";
 
 export const runtime = "nodejs";
 
@@ -141,7 +143,35 @@ function toDashboard(row: Record<string, unknown>): GovernmentDashboardData | nu
       pharmaciesRequiringReview: fraudCounts[2]!,
       heldRewardCount: fraudCounts[3]!,
     },
+    pathwayActivity: [],
+    recentActions: [],
   };
+}
+
+function addMultisyndromeData(dashboard: GovernmentDashboardData, row: Record<string, unknown>) {
+  const rawActivity = Array.isArray(row.pathway_activity) ? row.pathway_activity : [];
+  const rawActions = Array.isArray(row.recent_actions) ? row.recent_actions : [];
+  dashboard.pathwayActivity = rawActivity.flatMap((value) => {
+    if (!value || typeof value !== "object") return [];
+    const item = value as Record<string, unknown>;
+    const signalCount = wholeNumber(item.signal_count);
+    const urgentCount = wholeNumber(item.urgent_count);
+    const level = item.signal_level as HotspotLevel;
+    if (!isPathwayId(item.pathway_id) || typeof item.area_name !== "string" || !broadAreaIds.has(item.area_name)
+      || signalCount === null || urgentCount === null || urgentCount > signalCount || !hotspotLevels.has(level)) return [];
+    return [{ pathwayId: item.pathway_id, areaId: item.area_name as BroadAreaId, signalCount, urgentCount, signalLevel: level, isDemo: item.is_demo === true }];
+  });
+  dashboard.recentActions = rawActions.flatMap((value) => {
+    if (!value || typeof value !== "object") return [];
+    const item = value as Record<string, unknown>;
+    const actionType = item.action_type as PublicHealthActionType;
+    const recordedAt = isoTimestamp(item.recorded_at);
+    if (typeof item.action_id !== "string" || !isPathwayId(item.pathway_id)
+      || typeof item.area_name !== "string" || !broadAreaIds.has(item.area_name)
+      || !PUBLIC_HEALTH_ACTION_TYPES.includes(actionType) || !recordedAt) return [];
+    return [{ actionId: item.action_id, pathwayId: item.pathway_id, areaId: item.area_name as BroadAreaId, actionType, note: typeof item.note === "string" ? item.note : null, recordedAt }];
+  });
+  return dashboard;
 }
 
 export async function GET() {
@@ -160,8 +190,29 @@ export async function GET() {
       ? toDashboard(rows[0] as unknown as Record<string, unknown>)
       : null;
     if (!dashboard) return errorResponse("GOVERNMENT_DASHBOARD_INVALID_DATA", 502);
+    const summaryRows = await callReferralRpc("get_multisyndrome_summary", {});
+    if (summaryRows[0]) addMultisyndromeData(dashboard, summaryRows[0] as Record<string, unknown>);
     return NextResponse.json({ dashboard }, { headers: responseHeaders });
   } catch {
     return errorResponse("GOVERNMENT_DASHBOARD_FETCH_FAILED", 502);
   }
+}
+
+export async function POST(request: Request) {
+  if (isAccountAuthConfigured()) {
+    const user = await currentAuthUser();
+    if (!user) return errorResponse("AUTH_REQUIRED", 401);
+    if (!await hasRole(user.id, "GOVERNMENT_VIEWER")) return errorResponse("GOVERNMENT_ACCESS_DENIED", 403);
+  }
+  let body: Record<string, unknown>;
+  try { body = await request.json() as Record<string, unknown>; } catch { return errorResponse("INVALID_PUBLIC_HEALTH_ACTION", 400); }
+  const actionType = body.actionType as PublicHealthActionType;
+  if (!isPathwayId(body.pathwayId) || typeof body.areaId !== "string" || !broadAreaIds.has(body.areaId)
+    || !PUBLIC_HEALTH_ACTION_TYPES.includes(actionType) || (body.note !== undefined && (typeof body.note !== "string" || body.note.length > 280))) {
+    return errorResponse("INVALID_PUBLIC_HEALTH_ACTION", 400);
+  }
+  try {
+    await callReferralRpc("record_public_health_action", { p_pathway_id: body.pathwayId, p_area_name: body.areaId, p_action_type: actionType, p_note: body.note ?? null });
+    return NextResponse.json({ recorded: true }, { status: 201, headers: responseHeaders });
+  } catch { return errorResponse("PUBLIC_HEALTH_ACTION_FAILED", 502); }
 }

@@ -39,8 +39,14 @@ try {
   const medicineCard = page.locator(".medicine-card").filter({ has: page.getByRole("heading", { name: "Amoxicillin", exact: true }) });
   if ((await medicineCard.count()) !== 1) throw new Error("Medicine search did not include the exact amoxicillin result");
   await medicineCard.scrollIntoViewIfNeeded();
+  if (await medicineCard.locator(".verified-product-image").count()) throw new Error("A verified product photo is visible on the medicine card before it is requested");
+  await medicineCard.getByRole("button", { name: "See verified product photo" }).click();
+  await page.locator(".medicine-photo-dialog").waitFor();
   await page.getByText(/U\.S\. DailyMed label product/i).waitFor();
   if (!await page.locator(".verified-product-image").isVisible()) throw new Error("Verified DailyMed image was not rendered");
+  if (!await page.getByRole("button", { name: "Exit" }).isVisible()) throw new Error("The product-photo dialog has no Exit button");
+  await page.getByRole("button", { name: "Exit" }).click();
+  if (await page.locator(".medicine-photo-dialog").count()) throw new Error("The product-photo dialog did not close");
   if (!await page.getByText(/does not confirm Bangladesh availability/i).isVisible()) throw new Error("Bangladesh availability warning is missing");
 
   const noOverflow = async (label) => {

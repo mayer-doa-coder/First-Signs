@@ -6,7 +6,8 @@ import { Icon, type IconName } from "@/components/icons";
 import { GovernmentActivityMap, hotspotLabel } from "@/components/government-activity-map";
 import { ClayCard, MetricCard, SectionHeading, StatusPill } from "@/components/ui";
 import { getBroadArea, type BroadAreaId } from "@/lib/broad-areas";
-import { fetchGovernmentDashboard, type GovernmentDashboardData } from "@/lib/government-dashboard";
+import { fetchGovernmentDashboard, recordPublicHealthAction, type GovernmentDashboardData, type PublicHealthActionType } from "@/lib/government-dashboard";
+import { getPathway, pathwayDefinitions, type PathwayId } from "@/lib/care-pathways";
 
 function formatCount(value: number, language: "bn" | "en") {
   return new Intl.NumberFormat(language === "bn" ? "bn-BD" : "en-BD", {
@@ -55,6 +56,9 @@ export function GovernmentDashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(false);
   const [selectedAreaId, setSelectedAreaId] = useState<BroadAreaId | null>(null);
+  const [pathwayFilter, setPathwayFilter] = useState<PathwayId | "ALL">("ALL");
+  const [actionBusy, setActionBusy] = useState(false);
+  const [actionStatus, setActionStatus] = useState<"saved" | "error" | null>(null);
 
   const loadDashboard = useCallback(async (quiet = false) => {
     if (quiet) setRefreshing(true);
@@ -94,6 +98,14 @@ export function GovernmentDashboard() {
     ?? dashboard?.areas[0]
     ?? null;
   const selectedBroadArea = getBroadArea(selectedArea?.areaId);
+  const visiblePathwaySignals = dashboard?.pathwayActivity.filter((item) => pathwayFilter === "ALL" || item.pathwayId === pathwayFilter) ?? [];
+
+  async function saveAction(pathwayId: PathwayId, areaId: BroadAreaId, actionType: PublicHealthActionType) {
+    setActionBusy(true); setActionStatus(null);
+    try { await recordPublicHealthAction({ pathwayId, areaId, actionType }); setActionStatus("saved"); await loadDashboard(true); }
+    catch { setActionStatus("error"); }
+    finally { setActionBusy(false); }
+  }
 
   return (
     <div className="government-dashboard-live" data-government-dashboard>
@@ -134,11 +146,35 @@ export function GovernmentDashboard() {
             <p className="dashboard-demo-seed-note" role="note">
               <Icon name="info" />
               <BilingualText copy={{
-                bn: `প্রদর্শনের জন্য ${formatCount(dashboard.demoSeededScreenings, "bn")}টি কৃত্রিম স্ক্রিনিং রেকর্ড সমষ্টিগত হিসাবে যুক্ত আছে। এগুলো বাস্তব রোগীর তথ্য নয়।`,
-                en: `${formatCount(dashboard.demoSeededScreenings, "en")} synthetic screening records are included for presentation. They are not real patient data.`,
+                bn: `এই দৃশ্যে ${formatCount(dashboard.demoSeededScreenings, "bn")}টি কৃত্রিম স্ক্রিনিং রেকর্ড সমষ্টিগত হিসাবে যুক্ত আছে। এগুলো বাস্তব রোগীর তথ্য নয়।`,
+                en: `${formatCount(dashboard.demoSeededScreenings, "en")} synthetic screening records are included in this view. They are not real patient data.`,
               }} />
             </p>
           )}
+
+          <ClayCard className="syndrome-signal-card" as="section">
+            <SectionHeading title={{ bn: "বহু-উদ্বেগ তদন্ত সংকেত", en: "Multi-pathway investigation signals" }} description={{ bn: "সম্মতি ও ন্যূনতম যাচাইয়ের পর পাঠানো নামবিহীন বিভাগভিত্তিক সংকেত। এগুলো নিশ্চিত প্রাদুর্ভাব নয়।", en: "Anonymous division-level signals sent after consent and minimum triage. These are not confirmed outbreaks." }} />
+            <div className="pathway-filter" role="group" aria-label="Pathway filter">
+              <button type="button" className={`button ${pathwayFilter === "ALL" ? "button-primary" : "button-quiet"}`} onClick={() => setPathwayFilter("ALL")}><BilingualText copy={{ bn: "সব পথ", en: "All pathways" }} /></button>
+              {pathwayDefinitions.map((pathway) => <button type="button" key={pathway.id} className={`button ${pathwayFilter === pathway.id ? "button-primary" : "button-quiet"}`} onClick={() => setPathwayFilter(pathway.id)}><BilingualText copy={pathway.label} /></button>)}
+            </div>
+            <p className="demo-rule-note"><Icon name="info" /><BilingualText copy={{ bn: "বর্তমান পর্যালোচনা নিয়ম: ৭ দিনে ৩–৪টি সংকেত নজরে রাখুন, ৫ বা বেশি হলে লাল তদন্ত সংকেত। এটি বাস্তব জনস্বাস্থ্য সীমা নয়।", en: "Current review rule: 3–4 signals in 7 days is watch; 5 or more is a red investigation signal. This is not a real-world public-health threshold." }} /></p>
+            {visiblePathwaySignals.length ? <div className="syndrome-signal-list">{visiblePathwaySignals.map((signal) => {
+              const area = getBroadArea(signal.areaId);
+              const pathway = getPathway(signal.pathwayId);
+              return <article className={`syndrome-signal-item hotspot-${signal.signalLevel.toLowerCase()}`} key={`${signal.pathwayId}-${signal.areaId}`}>
+                <div><span className="mini-label"><BilingualText copy={pathway.label} /> · <BilingualText copy={{ bn: "কৃত্রিম পরীক্ষামূলক তথ্য", en: "Synthetic test data" }} /></span><h3>{area ? <BilingualText copy={area.label} /> : signal.areaId}</h3></div>
+                <StatusPill tone={signal.signalLevel === "RED" ? "risk" : "warning"} icon="trend" label={{ bn: signal.signalLevel === "RED" ? "তদন্ত সংকেত" : "নজরে রাখুন", en: signal.signalLevel === "RED" ? "Investigation signal" : "Watch" }} />
+                <p><strong>{formatCount(signal.signalCount, language)}</strong> <BilingualText copy={{ bn: "নামবিহীন প্রতিবেদন", en: "anonymous reports" }} /> · <strong>{formatCount(signal.urgentCount, language)}</strong> <BilingualText copy={{ bn: "জরুরি", en: "urgent" }} /></p>
+                <div className="button-row">
+                  <button className="button button-secondary" type="button" disabled={actionBusy} onClick={() => void saveAction(signal.pathwayId, signal.areaId, signal.pathwayId === "DIARRHOEA_DEHYDRATION" ? "CHECK_WATER_SAFETY" : "REVIEW_SIGNAL")}><BilingualText copy={signal.pathwayId === "DIARRHOEA_DEHYDRATION" ? { bn: "পানির নিরাপত্তা যাচাই নথিভুক্ত করুন", en: "Record water-safety check" } : { bn: "পর্যালোচনা নথিভুক্ত করুন", en: "Record review" }} /></button>
+                  <button className="button button-quiet" type="button" disabled={actionBusy} onClick={() => void saveAction(signal.pathwayId, signal.areaId, "ARRANGE_OUTREACH")}><BilingualText copy={{ bn: "আউটরিচ নথিভুক্ত করুন", en: "Record outreach" }} /></button>
+                </div>
+              </article>;
+            })}</div> : <p className="privacy-suppressed-state"><BilingualText copy={{ bn: "এই ফিল্টারে দেখানোর মতো ন্যূনতম ৩টি নামবিহীন সংকেত নেই।", en: "This filter has fewer than 3 anonymous signals, so no area is displayed." }} /></p>}
+            {actionStatus && <p role={actionStatus === "error" ? "alert" : "status"}><BilingualText copy={actionStatus === "saved" ? { bn: "জনস্বাস্থ্য পদক্ষেপ নথিভুক্ত হয়েছে।", en: "Public-health action recorded." } : { bn: "পদক্ষেপটি নথিভুক্ত করা যায়নি।", en: "The action could not be recorded." }} /></p>}
+            {dashboard.recentActions.length > 0 && <div className="recent-action-list"><h3><BilingualText copy={{ bn: "সাম্প্রতিক নথিভুক্ত পদক্ষেপ", en: "Recent recorded actions" }} /></h3>{dashboard.recentActions.slice(0, 5).map((action) => <p key={action.actionId}><BilingualText copy={getPathway(action.pathwayId).label} /> · {getBroadArea(action.areaId)?.label[language] ?? action.areaId} · <span lang="en">{action.actionType}</span></p>)}</div>}
+          </ClayCard>
 
           <div className="metrics-grid metrics-grid-six">
             <MetricCard label={{ bn: "মোট স্ক্রিনিং", en: "Total screenings" }} value={formatCount(dashboard.totalScreenings, language)} valueLanguage={language} icon="screen" />

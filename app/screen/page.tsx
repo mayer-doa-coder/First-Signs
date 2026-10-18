@@ -46,9 +46,9 @@ export default async function ScreenPage({ searchParams }: { searchParams: Scree
 
   return (
     <PageShell
-      eyebrow={{ bn: "রোগীর স্ক্রিনিং", en: "Patient screening" }}
+      eyebrow={{ bn: "সেবা নির্দেশনা", en: "Care navigation" }}
       title={{ bn: "আপনার উদ্বেগ বুঝে পরবর্তী পদক্ষেপ খুঁজুন", en: "Understand your concern and find the next step" }}
-      description={{ bn: "এই পাতায় সংক্ষিপ্ত প্রশ্ন, কাশির অডিও এবং এলাকার তথ্যের মাধ্যমে সেবা-দিকনির্দেশনা তৈরি হবে।", en: "This page will use short questions, cough audio, and broad area information to guide care." }}
+      description={{ bn: "স্বাস্থ্য উদ্বেগ বেছে নিয়ে সংক্ষিপ্ত প্রশ্নের উত্তর দিন এবং উপযুক্ত সেবার পরবর্তী ধাপ খুঁজুন। কাশির অডিও শুধু যক্ষ্মা-সচেতন শ্বাসতন্ত্রের পথে ঐচ্ছিক।", en: "Choose a health concern, answer a short set of questions, and find the next care step. Cough audio is optional only in the TB-aware respiratory pathway." }}
       icon="screen"
     >
       <DemoNotice />
@@ -70,7 +70,7 @@ export default async function ScreenPage({ searchParams }: { searchParams: Scree
             <div><dt><BilingualText copy={{ bn: "এলাকা", en: "Area" }} /></dt><dd><BilingualText copy={pharmacy.area} /></dd></div>
           </dl>
         )}
-        <p><BilingualText copy={{ bn: "প্রবেশের ধরনটি এই স্ক্রিনিং লিংকের সঙ্গে রাখা হয়েছে। চিকিৎসা-সংক্রান্ত ধাপ দুই পথেই একই।", en: "The entry source is retained in this screening link. The health pathway is the same for both entry types." }} /></p>
+        <p><BilingualText copy={{ bn: "প্রবেশের ধরনটি এই সেবা লিংকের সঙ্গে রাখা হয়েছে। পাঁচটি স্বাস্থ্য উদ্বেগের পথ নিজে ব্যবহার ও ফার্মেসির সহায়তায়—দুইভাবেই পাওয়া যায়।", en: "The entry source is retained in this care link. All five health-concern pathways are available for both self-use and pharmacy-assisted access." }} /></p>
       </ClayCard>
       <div className="split-layout">
         <ScreeningFlow isSelfUse={isSelfUse} pharmacyId={pharmacy?.id} pharmacyName={pharmacy?.name} />
@@ -88,11 +88,11 @@ export default async function ScreenPage({ searchParams }: { searchParams: Scree
         </aside>
       </div>
       <section className="section-block" aria-labelledby="screen-preview-title">
-        <SectionHeading title={{ bn: "এই স্ক্রিনিংয়ের অংশ", en: "What this screening includes" }} />
+        <SectionHeading title={{ bn: "এই যাচাইয়ের অংশ", en: "What this check includes" }} />
         <div className="feature-grid three-column" id="screen-preview-title">
-          <FeatureCard icon="document" title={{ bn: "লক্ষণ ও ঝুঁকি", en: "Symptoms and risks" }} description={{ bn: "শুধু প্রয়োজনীয় কয়েকটি ছোট প্রশ্ন।", en: "Only a small set of useful questions." }} />
-          <FeatureCard icon="care" title={{ bn: "কাশির নমুনা", en: "Cough sample" }} description={{ bn: "ঐচ্ছিক পরীক্ষামূলক অডিও সংকেত।", en: "An optional experimental acoustic signal." }} />
-          <FeatureCard icon="location" title={{ bn: "বিস্তৃত এলাকা", en: "Broad area" }} description={{ bn: "সেবাকেন্দ্র খোঁজার জন্য; নির্দিষ্ট বাসার ঠিকানা নয়।", en: "For finding care, never an exact home address." }} />
+          <FeatureCard icon="document" title={{ bn: "পাঁচটি উদ্বেগের পথ", en: "Five concern pathways" }} description={{ bn: "শ্বাসতন্ত্র, জ্বর, ডায়রিয়া, ত্বক/স্নায়ু এবং শিশুর শ্বাস।", en: "Respiratory, fever, diarrhoea, skin/nerve, and child breathing." }} />
+          <FeatureCard icon="care" title={{ bn: "স্থির নিরাপত্তা নিয়ম", en: "Fixed safety rules" }} description={{ bn: "বিপদচিহ্ন আগে; কোনো রোগ নির্ণয় নয়।", en: "Danger signs first; no diagnosis." }} />
+          <FeatureCard icon="location" title={{ bn: "বিস্তৃত এলাকা", en: "Broad area" }} description={{ bn: "উপযুক্ত সেবা খোঁজার জন্য; নির্দিষ্ট বাসার ঠিকানা নয়।", en: "For finding appropriate care, never an exact home address." }} />
         </div>
       </section>
     </PageShell>

@@ -11,7 +11,7 @@ const patientNavigation: { href: string; label: Copy; icon: IconName }[] = [
   { href: "/", label: { bn: "হোম", en: "Home" }, icon: "home" },
   { href: "/screen?source=self", label: { bn: "স্ক্রিনিং", en: "Screening" }, icon: "screen" },
   { href: "/care", label: { bn: "আমার সেবা", en: "My care" }, icon: "care" },
-  { href: "/assistant", label: { bn: "সহায়ক", en: "Assistant" }, icon: "care" },
+  { href: "/assistant", label: { bn: "সহায়ক", en: "Assistant" }, icon: "microphone" },
   { href: "/medicines", label: { bn: "ওষুধ", en: "Medicines" }, icon: "pharmacy" },
   { href: "/community", label: { bn: "কমিউনিটি", en: "Community" }, icon: "community" },
 ];

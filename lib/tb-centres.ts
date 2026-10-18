@@ -1,4 +1,5 @@
 import type { Copy } from "@/components/language";
+import type { PathwayId } from "@/lib/care-pathways";
 
 export type TbCentre = {
   id: string;
@@ -8,6 +9,24 @@ export type TbCentre = {
   serviceType: Copy;
   latitude: number;
   longitude: number;
+};
+
+export type CareFacility = TbCentre;
+
+const generalHospitalPathways: readonly PathwayId[] = [
+  "RESPIRATORY_TB",
+  "FEVER_MOSQUITO",
+  "DIARRHOEA_DEHYDRATION",
+  "SKIN_NERVE_LEPROSY",
+  "CHILD_BREATHING",
+];
+
+const pathwayServices: Record<PathwayId, Copy> = {
+  RESPIRATORY_TB: { en: "TB evaluation — confirm current test availability", bn: "যক্ষ্মা মূল্যায়ন — পরীক্ষার বর্তমান প্রাপ্যতা নিশ্চিত করুন" },
+  FEVER_MOSQUITO: { en: "Fever evaluation and testing — confirm availability", bn: "জ্বর মূল্যায়ন ও পরীক্ষা — প্রাপ্যতা নিশ্চিত করুন" },
+  DIARRHOEA_DEHYDRATION: { en: "Dehydration and diarrhoea evaluation", bn: "পানিশূন্যতা ও ডায়রিয়া মূল্যায়ন" },
+  SKIN_NERVE_LEPROSY: { en: "Skin and nerve evaluation with referral onward if needed", bn: "ত্বক ও স্নায়ু মূল্যায়ন; প্রয়োজনে বিশেষায়িত রেফারেল" },
+  CHILD_BREATHING: { en: "Child breathing evaluation and urgent care", bn: "শিশুর শ্বাসের মূল্যায়ন ও জরুরি সেবা" },
 };
 
 const microscopy: Copy = { bn: "মাইক্রোস্কপি", en: "Microscopy" };
@@ -57,6 +76,23 @@ export function getTbCentre(centreId: string | null | undefined) {
   return tbCentres.find((centre) => centre.id === centreId);
 }
 
+export const careFacilities: readonly CareFacility[] = tbCentres;
+
+export function getCareFacility(facilityId: string | null | undefined) {
+  return getTbCentre(facilityId);
+}
+
+export function facilitySupportsPathway(facility: CareFacility, pathwayId: PathwayId) {
+  // Medical-college/referral hospitals provide nationwide general coverage.
+  // Existing Khulna facilities remain valid navigation points and can refer
+  // onward when a specialty service is not available on the day.
+  return generalHospitalPathways.includes(pathwayId) && Boolean(facility.id);
+}
+
+export function facilityServiceForPathway(facility: CareFacility, pathwayId: PathwayId): Copy {
+  return pathwayId === "RESPIRATORY_TB" ? facility.serviceType : pathwayServices[pathwayId];
+}
+
 const EARTH_RADIUS_KM = 6371;
 
 function toRadians(degrees: number) {
@@ -99,6 +135,17 @@ export function rankCentresByDistance(origin: Coordinates): RankedCentre[] {
  */
 export function getRecommendedCentre(origin: Coordinates, options?: { excludeId?: string }): RankedCentre | undefined {
   const ranked = rankCentresByDistance(origin);
+  if (!options?.excludeId) return ranked[0];
+  return ranked.find((entry) => entry.centre.id !== options.excludeId) ?? ranked[0];
+}
+
+export function getRecommendedFacility(
+  origin: Coordinates,
+  pathwayId: PathwayId,
+  options?: { excludeId?: string },
+): RankedCentre | undefined {
+  const ranked = rankCentresByDistance(origin)
+    .filter(({ centre }) => facilitySupportsPathway(centre, pathwayId));
   if (!options?.excludeId) return ranked[0];
   return ranked.find((entry) => entry.centre.id !== options.excludeId) ?? ranked[0];
 }

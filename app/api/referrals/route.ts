@@ -5,12 +5,19 @@ import {
   REFERRAL_STATUSES,
   REFERRAL_ID_PATTERN,
   type CreateReferralInput,
-  type ReferralSymptomAnswers,
   type ReferralView,
 } from "@/lib/referrals";
-import { evaluateSafetyRules, SAFETY_OUTCOMES } from "@/lib/safety-rules";
+import {
+  CARE_OUTCOMES,
+  evaluateCarePathway,
+  getPathway,
+  isAgeBand,
+  isPathwayId,
+  outcomeNeedsReferral,
+  pathwayAnswersAreValid,
+} from "@/lib/care-pathways";
 import { callReferralRpc, isReferralDatabaseConfigured } from "@/lib/supabase-server";
-import { getTbCentre } from "@/lib/tb-centres";
+import { facilitySupportsPathway, getCareFacility } from "@/lib/tb-centres";
 
 export const runtime = "nodejs";
 
@@ -28,28 +35,12 @@ function errorResponse(error: string, status: number) {
   return NextResponse.json({ error }, { status, headers: responseHeaders });
 }
 
-function isBoolean(value: unknown): value is boolean {
-  return typeof value === "boolean";
-}
-
-function isSymptomAnswers(value: unknown): value is ReferralSymptomAnswers {
-  if (!value || typeof value !== "object") return false;
-  const answers = value as Partial<ReferralSymptomAnswers>;
-  return Number.isSafeInteger(answers.coughDays)
-    && Number(answers.coughDays) >= 0
-    && Number(answers.coughDays) <= 3650
-    && isBoolean(answers.fever)
-    && isBoolean(answers.nightSweats)
-    && isBoolean(answers.weightLoss)
-    && isBoolean(answers.bloodInSputum)
-    && isBoolean(answers.tbExposure);
-}
-
 function parseCreateInput(value: unknown): CreateReferralInput | null {
   if (!value || typeof value !== "object") return null;
   const input = value as Partial<CreateReferralInput>;
   const area = broadAreas.find((candidate) => candidate.id === input.areaName);
-  const centre = getTbCentre(input.tbCenterId);
+  const pathway = isPathwayId(input.pathwayId) ? getPathway(input.pathwayId) : null;
+  const centre = getCareFacility(input.facilityId);
   const sourceValid = input.sourceType === "SELF" || input.sourceType === "PHARMACY";
   const pharmacyValid = input.sourceType === "SELF"
     ? input.pharmacyId === undefined
@@ -64,16 +55,21 @@ function parseCreateInput(value: unknown): CreateReferralInput | null {
     || !sourceValid
     || !pharmacyValid
     || !area
+    || !pathway
+    || !isAgeBand(input.ageBand)
+    || input.ruleVersion !== pathway.ruleVersion
     || !centre
+    || !facilitySupportsPathway(centre, input.pathwayId!)
     || !audioValid
     || !hashValid
-    || !isSymptomAnswers(input.symptomAnswers)) return null;
+    || !pathwayAnswersAreValid(input.pathwayId!, input.symptomAnswers)) return null;
 
   if (input.areaLatitude !== area.latitude || input.areaLongitude !== area.longitude) return null;
   if (input.audioHash !== undefined && input.audioStatus !== "uploaded") return null;
 
-  const fixedOutcome = evaluateSafetyRules(input.symptomAnswers);
-  if (fixedOutcome !== input.screeningResult || fixedOutcome === SAFETY_OUTCOMES.CONTINUE) return null;
+  if (!Object.values(CARE_OUTCOMES).includes(input.screeningResult as never)) return null;
+  const fixedOutcome = evaluateCarePathway(input.pathwayId!, input.ageBand!, input.symptomAnswers!);
+  if (fixedOutcome !== input.screeningResult || !outcomeNeedsReferral(fixedOutcome)) return null;
 
   return input as CreateReferralInput;
 }
@@ -104,6 +100,8 @@ function toReferralView(row: Record<string, unknown>, requireReviewFields = fals
     accessToken: String(row.access_token ?? ""),
     status: status as ReferralView["status"],
     tbCenterId: String(row.tb_center_id ?? ""),
+    facilityId: String(row.tb_center_id ?? ""),
+    pathwayId: String(row.pathway_id ?? "RESPIRATORY_TB") as ReferralView["pathwayId"],
     centreName: String(row.centre_name ?? ""),
     centreArea: String(row.centre_area ?? ""),
     centreDistrict: String(row.centre_district ?? ""),
@@ -119,7 +117,8 @@ function toReferralView(row: Record<string, unknown>, requireReviewFields = fals
 
   if (!REFERRAL_ID_PATTERN.test(referral.referralId)
     || !UUID_PATTERN.test(referral.accessToken)
-    || !getTbCentre(referral.tbCenterId)
+    || !isPathwayId(referral.pathwayId)
+    || !getCareFacility(referral.tbCenterId)
     || !referral.centreName
     || !referral.centreArea
     || !referral.centreDistrict
@@ -140,11 +139,14 @@ export async function POST(request: Request) {
   if (!isReferralDatabaseConfigured()) return errorResponse("REFERRAL_BACKEND_NOT_CONFIGURED", 503);
 
   try {
-    const rows = await callReferralRpc("create_part9_referral", {
+    const rows = await callReferralRpc("create_multisyndrome_referral", {
       p_screening_id: input.screeningId,
       p_patient_id: input.patientId,
       p_source_type: input.sourceType,
       p_pharmacy_id: input.pharmacyId ?? null,
+      p_pathway_id: input.pathwayId,
+      p_rule_version: input.ruleVersion,
+      p_age_band: input.ageBand,
       p_area_name: input.areaName,
       p_area_latitude: input.areaLatitude,
       p_area_longitude: input.areaLongitude,
@@ -152,7 +154,7 @@ export async function POST(request: Request) {
       p_audio_status: input.audioStatus,
       p_audio_hash: input.audioHash ?? null,
       p_screening_result: input.screeningResult,
-      p_tb_center_id: input.tbCenterId,
+      p_tb_center_id: input.facilityId,
     });
     const referral = rows[0] ? toReferralView(rows[0] as unknown as Record<string, unknown>, true) : null;
     if (!referral) return errorResponse("REFERRAL_CREATE_FAILED", 502);

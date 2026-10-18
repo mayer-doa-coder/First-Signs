@@ -20,11 +20,13 @@ import {
   type CareEntrySource,
   type CareRecord,
   type CareReferralStatus,
+  type StoredCareOutcome,
 } from "@/lib/care-session";
 import { getActivePharmacy } from "@/lib/pharmacies";
-import { SAFETY_OUTCOMES, type SafetyOutcome } from "@/lib/safety-rules";
+import { SAFETY_OUTCOMES } from "@/lib/safety-rules";
+import { CARE_OUTCOMES, getPathway, type CareOutcome } from "@/lib/care-pathways";
 import { getBroadArea } from "@/lib/broad-areas";
-import { getRecommendedCentre, getTbCentre, rankCentresByDistance, tbCentres } from "@/lib/tb-centres";
+import { facilityServiceForPathway, getRecommendedFacility, getTbCentre, rankCentresByDistance, tbCentres } from "@/lib/tb-centres";
 import { TbCentreMap } from "@/components/tb-centre-map";
 import { fetchReferral, referralLinkFor, requestReferral } from "@/lib/referrals";
 import {
@@ -42,30 +44,50 @@ import {
   explainCareNextStep,
 } from "@/lib/ai-companion";
 
-const outcomeLabels: Record<SafetyOutcome, Copy> = {
+const outcomeLabels: Record<StoredCareOutcome, Copy> = {
   CONTINUE_SCREENING: { bn: "নির্দিষ্ট রেফারেল মানদণ্ড মেলেনি", en: "No fixed referral criterion met" },
   FORMAL_TB_EVALUATION_RECOMMENDED: { bn: "আনুষ্ঠানিক মূল্যায়নের পরামর্শ", en: "Formal evaluation recommended" },
   URGENT_MEDICAL_EVALUATION: { bn: "জরুরি চিকিৎসা মূল্যায়ন", en: "Urgent medical evaluation" },
+  CONTINUE_WITH_CARE_INFORMATION: { bn: "সেবার তথ্য", en: "Care information" },
+  PROFESSIONAL_EVALUATION_RECOMMENDED: { bn: "পেশাদার মূল্যায়নের পরামর্শ", en: "Professional evaluation recommended" },
 };
 
-const recommendationCopy: Record<SafetyOutcome, Copy> = {
+const recommendationCopy: Record<StoredCareOutcome, Copy> = {
   CONTINUE_SCREENING: {
     bn: "বর্তমান উত্তরে জরুরি বা আনুষ্ঠানিক মূল্যায়নের নির্দিষ্ট মানদণ্ড মেলেনি। এতে যক্ষ্মা বা অন্য অসুস্থতা নেই—এমন প্রমাণ হয় না। উপসর্গ থেকে গেলে, বেড়ে গেলে বা উদ্বেগ হলে চিকিৎসাসেবা নিন।",
     en: "Your current answers did not meet a fixed urgent or formal-evaluation criterion. This does not rule out TB or another illness. Seek medical care if symptoms persist, worsen, or concern you.",
   },
   FORMAL_TB_EVALUATION_RECOMMENDED: {
-    bn: "আপনার স্ক্রিনিং বলছে যে আনুষ্ঠানিক যক্ষ্মা মূল্যায়নের পরামর্শ দেওয়া হচ্ছে। এই ফলাফলের অর্থ এই নয় যে আপনার যক্ষ্মা হয়েছে। যাচাইকৃত যক্ষ্মা সেবাকেন্দ্রে মূল্যায়ন ও উপযুক্ত পরীক্ষা করান।",
-    en: "Your screening suggests that formal TB evaluation is recommended. This result does not mean that you have TB. Please receive evaluation and appropriate testing at a verified TB centre.",
+    bn: "আপনার স্ক্রিনিং বলছে যে পেশাদার স্বাস্থ্য মূল্যায়নের পরামর্শ দেওয়া হচ্ছে। এটি কোনো রোগ নির্ণয় নয়। তালিকাভুক্ত সেবাকেন্দ্রে মূল্যায়ন ও উপযুক্ত পরীক্ষা করান।",
+    en: "Your screening suggests that professional health evaluation is recommended. This is not a diagnosis. Please receive evaluation and appropriate testing at a listed care facility.",
   },
   URGENT_MEDICAL_EVALUATION: {
     bn: "কাশির সঙ্গে রক্ত এলে দ্রুত চিকিৎসকের মূল্যায়ন প্রয়োজন। এটি যক্ষ্মা রোগ নির্ণয় নয় এবং অন্য গুরুতর কারণও থাকতে পারে।",
     en: "Blood in the sputum needs prompt medical assessment. This is not a TB diagnosis, and there may be another serious cause.",
   },
+  CONTINUE_WITH_CARE_INFORMATION: {
+    bn: "নির্দিষ্ট রেফারেল বা জরুরি মানদণ্ড পাওয়া যায়নি। এতে অসুস্থতা নেই প্রমাণ হয় না। লক্ষণ চলতে থাকলে, বাড়লে বা উদ্বেগ হলে সেবা নিন।",
+    en: "No fixed referral or urgent criterion was found. This does not rule out illness. Seek care if symptoms continue, worsen, or concern you.",
+  },
+  PROFESSIONAL_EVALUATION_RECOMMENDED: {
+    bn: "নির্দিষ্ট নিরাপত্তা নিয়ম অনুযায়ী প্রশিক্ষিত স্বাস্থ্যকর্মীর মূল্যায়নের পরামর্শ দেওয়া হচ্ছে। এটি রোগ নির্ণয় নয়।",
+    en: "The fixed safety rules recommend evaluation by a trained health worker. This is not a diagnosis.",
+  },
 };
 
+function isContinueOutcome(outcome: StoredCareOutcome) {
+  return outcome === SAFETY_OUTCOMES.CONTINUE || outcome === CARE_OUTCOMES.CONTINUE;
+}
+
+function currentCareOutcome(outcome: StoredCareOutcome): CareOutcome {
+  if (outcome === SAFETY_OUTCOMES.CONTINUE) return CARE_OUTCOMES.CONTINUE;
+  if (outcome === SAFETY_OUTCOMES.FORMAL_EVALUATION) return CARE_OUTCOMES.EVALUATION;
+  return outcome as CareOutcome;
+}
+
 const emergencyCopy: Copy = {
-  bn: "কয়েকটি ছোট দাগের চেয়ে বেশি রক্ত এলে, শ্বাস নিতে কষ্ট হলে, হৃদস্পন্দন খুব দ্রুত হলে, অথবা বুক বা পিঠের ওপরের অংশে ব্যথা হলে এখনই ৯৯৯ নম্বরে কল করুন বা নিকটস্থ হাসপাতালের জরুরি বিভাগে যান। যক্ষ্মা সেবাকেন্দ্রের রেফারেল জরুরি চিকিৎসার বিকল্প নয়।",
-  en: "If there is more than a few spots or streaks of blood, difficulty breathing, a very fast heartbeat, or chest or upper-back pain, call Bangladesh National Emergency Service 999 or go to the nearest hospital emergency department now. A TB-centre referral does not replace emergency care.",
+  bn: "বিপদচিহ্ন থাকলে এখনই ৯৯৯ নম্বরে কল করুন বা নিকটস্থ হাসপাতালের জরুরি বিভাগে যান। কোনো রেফারেল জরুরি চিকিৎসার বিকল্প নয়।",
+  en: "If a danger sign is present, call Bangladesh National Emergency Service 999 or go to the nearest hospital emergency department now. A referral does not replace emergency care.",
 };
 
 const referralStatusLabels: Record<CareReferralStatus, Copy> = {
@@ -87,7 +109,7 @@ function nextActionCopy(record: CareRecord, hasCentre: boolean): Copy {
   if (record.screeningOutcome === SAFETY_OUTCOMES.URGENT_EVALUATION && !record.followUpNeeded) {
     return { bn: "আগে জরুরি চিকিৎসা নির্দেশনা অনুসরণ করুন", en: "Follow the urgent medical guidance first" };
   }
-  if (record.screeningOutcome === SAFETY_OUTCOMES.CONTINUE) {
+  if (isContinueOutcome(record.screeningOutcome)) {
     return { bn: "উপসর্গ লক্ষ্য করুন এবং প্রয়োজন হলে চিকিৎসাসেবা নিন", en: "Watch your symptoms and seek medical care when needed" };
   }
   if (record.followUpNeeded && record.followUp?.nextAction) {
@@ -97,13 +119,13 @@ function nextActionCopy(record: CareRecord, hasCentre: boolean): Copy {
     return { bn: "যেতে না পারার কারণটি জানান", en: "Tell us what prevented your visit" };
   }
   if (!hasCentre) {
-    return { bn: "একটি যক্ষ্মা সেবাকেন্দ্র বেছে নিন", en: "Choose a TB centre" };
+    return { bn: "একটি সেবাকেন্দ্র বেছে নিন", en: "Choose a care facility" };
   }
   if (record.referralStatus === "PENDING") {
-    return { bn: "রেফারেল কিউআর সঙ্গে নিয়ে সেবাকেন্দ্রে যান", en: "Take the referral QR to the TB centre" };
+    return { bn: "রেফারেল কিউআর সঙ্গে নিয়ে সেবাকেন্দ্রে যান", en: "Take the referral QR to the care facility" };
   }
   if (record.referralStatus === "COMPLETED") {
-    return { bn: "সেবাকেন্দ্রের পরবর্তী নির্দেশনা অনুসরণ করুন", en: "Follow the TB centre's next instructions" };
+    return { bn: "সেবাকেন্দ্রের পরবর্তী নির্দেশনা অনুসরণ করুন", en: "Follow the care facility's next instructions" };
   }
   if (record.referralStatus === "CLOSED") {
     return { bn: "প্রয়োজনে আবার চিকিৎসাসেবা নিন", en: "Seek medical care again if needed" };
@@ -118,7 +140,7 @@ function followUpMessageCopy(record: CareRecord, centreName?: Copy): Copy | null
 
   const centreSuffix = centreName
     ? { bn: ` বর্তমানে বেছে নেওয়া কেন্দ্র: ${centreName.bn}।`, en: ` Your currently selected centre is ${centreName.en}.` }
-    : { bn: " এখনো কোনো সেবাকেন্দ্র বেছে নেওয়া হয়নি।", en: " No TB centre has been selected yet." };
+    : { bn: " এখনো কোনো সেবাকেন্দ্র বেছে নেওয়া হয়নি।", en: " No care facility has been selected yet." };
 
   return {
     bn: `আপনি যেতে পারেননি—এটি রাখা হয়েছে। দেরি হলেও আনুষ্ঠানিক মূল্যায়ন এখনো প্রয়োজন।${centreSuffix.bn} ${record.followUp?.nextAction ? "আপনার বলা কারণ অনুযায়ী পরবর্তী কাজ নিচে দেখানো হয়েছে।" : "যেতে না পারার কারণ জানালে পরবর্তী কাজ দেখানো হবে।"}`,
@@ -128,7 +150,10 @@ function followUpMessageCopy(record: CareRecord, centreName?: Copy): Copy | null
 
 function mergePersistedCare(persisted: CareRecord, local: CareRecord | null) {
   const area = getBroadArea(persisted.area);
-  const fallbackCentreId = area ? getRecommendedCentre(area)?.centre.id : undefined;
+  const pathwayId = persisted.pathwayId ?? "RESPIRATORY_TB";
+  const fallbackCentreId = area
+    ? getRecommendedFacility(area, pathwayId)?.centre.id
+    : undefined;
   const selectedCentreId = persisted.selectedCentreId ?? local?.selectedCentreId ?? fallbackCentreId;
   const keepLocalChoice = !persisted.referral
     && local
@@ -395,13 +420,14 @@ export function CareCompanion({
   // that stability to avoid rebuilding the map and refetching the route
   // whenever the area and selected centre have not actually changed.
   const broadArea = record ? getBroadArea(record.area) : undefined;
+  const recordPathwayId = record?.pathwayId ?? "RESPIRATORY_TB";
   // Older/offline records may predate selectedCentreId. Preserve a usable,
   // broad-area recommendation instead of rendering an empty centre panel.
   const centre = record
-    ? getTbCentre(record.selectedCentreId) ?? (broadArea ? getRecommendedCentre(broadArea)?.centre : undefined)
+    ? getTbCentre(record.selectedCentreId) ?? (broadArea ? getRecommendedFacility(broadArea, recordPathwayId)?.centre : undefined)
     : undefined;
   const rankedCentres = useMemo(() => (broadArea ? rankCentresByDistance(broadArea) : []), [broadArea]);
-  const recommendedCentreId = useMemo(() => (broadArea ? getRecommendedCentre(broadArea)?.centre.id : undefined), [broadArea]);
+  const recommendedCentreId = useMemo(() => (broadArea ? getRecommendedFacility(broadArea, recordPathwayId)?.centre.id : undefined), [broadArea, recordPathwayId]);
   const mapAlternates = useMemo(
     () => rankedCentres.filter((entry) => entry.centre.id !== centre?.id),
     [rankedCentres, centre?.id],
@@ -436,7 +462,7 @@ export function CareCompanion({
     ? followUpActionCopy[currentRecord.followUp.nextAction]
     : null;
   const isUrgent = currentRecord.screeningOutcome === SAFETY_OUTCOMES.URGENT_EVALUATION;
-  const referralPathwayAvailable = currentRecord.screeningOutcome !== SAFETY_OUTCOMES.CONTINUE;
+  const referralPathwayAvailable = !isContinueOutcome(currentRecord.screeningOutcome);
   function updateCare(changes: Partial<CareRecord>, nextFeedback: Copy) {
     const updatedRecord: CareRecord = { ...currentRecord, ...changes, updatedAt: new Date().toISOString() };
     saveCareRecord(updatedRecord);
@@ -448,7 +474,7 @@ export function CareCompanion({
     if (currentRecord.referral) {
       setFeedback({
         bn: "রেফারেল তৈরি হওয়ার পরে সেবাকেন্দ্র বদলানো যায় না। নতুন সহায়তার জন্য কেন্দ্রের সঙ্গে কথা বলুন।",
-        en: "The TB centre cannot be changed after the referral is created. Ask the centre for help if a change is needed.",
+        en: "The care facility cannot be changed after the referral is created. Ask the facility for help if a change is needed.",
       });
       return;
     }
@@ -458,7 +484,7 @@ export function CareCompanion({
       { selectedCentreId: selectedCentre.id },
       {
         bn: `সেবাকেন্দ্র বেছে নেওয়া হয়েছে: ${selectedCentre.name.bn} (${selectedCentre.area.bn})।`,
-        en: `TB centre selected: ${selectedCentre.name.en} (${selectedCentre.area.en}).`,
+        en: `Care facility selected: ${selectedCentre.name.en} (${selectedCentre.area.en}).`,
       },
     );
   }
@@ -472,8 +498,8 @@ export function CareCompanion({
     if (!centre || !broadArea) {
       setShowCentre(true);
       setFeedback({
-        bn: "রেফারেল তৈরির আগে একটি যক্ষ্মা সেবাকেন্দ্র বেছে নিন।",
-        en: "Choose a TB centre before creating the referral.",
+        bn: "রেফারেল তৈরির আগে একটি সেবাকেন্দ্র বেছে নিন।",
+        en: "Choose a care facility before creating the referral.",
       });
       return;
     }
@@ -505,8 +531,11 @@ export function CareCompanion({
         symptomAnswers: currentRecord.symptomAnswers,
         audioStatus: currentRecord.audioChoice ?? "skipped",
         ...(currentRecord.audioHash ? { audioHash: currentRecord.audioHash } : {}),
-        screeningResult: currentRecord.screeningOutcome,
-        tbCenterId: centre.id,
+        pathwayId: currentRecord.pathwayId ?? "RESPIRATORY_TB",
+        ruleVersion: currentRecord.ruleVersion ?? getPathway(currentRecord.pathwayId ?? "RESPIRATORY_TB").ruleVersion,
+        ageBand: currentRecord.ageBand ?? "ADULT",
+        screeningResult: currentCareOutcome(currentRecord.screeningOutcome),
+        facilityId: centre.id,
       });
       updateCare(
         { referralStatus: "PENDING", referral, followUpNeeded: false },
@@ -616,7 +645,7 @@ export function CareCompanion({
               }
             : {
                 bn: `বর্তমান রেফারেল অবস্থা: ${referralStatusLabels[nextStatus].bn}। নির্বাচিত সেবাকেন্দ্র: ${latestReferral.centreName}।`,
-                en: `Current referral status: ${referralStatusLabels[nextStatus].en}. Selected TB centre: ${latestReferral.centreName}.`,
+                en: `Current referral status: ${referralStatusLabels[nextStatus].en}. Selected care facility: ${latestReferral.centreName}.`,
               },
         );
       } catch {
@@ -630,8 +659,8 @@ export function CareCompanion({
       return;
     }
     const centreLine = centre
-      ? { bn: ` নির্বাচিত সেবাকেন্দ্র: ${centre.name.bn}।`, en: ` Selected TB centre: ${centre.name.en}.` }
-      : { bn: " এখনো কোনো সেবাকেন্দ্র বেছে নেওয়া হয়নি।", en: " No TB centre has been selected yet." };
+      ? { bn: ` নির্বাচিত সেবাকেন্দ্র: ${centre.name.bn}।`, en: ` Selected care facility: ${centre.name.en}.` }
+      : { bn: " এখনো কোনো সেবাকেন্দ্র বেছে নেওয়া হয়নি।", en: " No care facility has been selected yet." };
 
     setFeedback({
       bn: `বর্তমান রেফারেল অবস্থা: ${referralStatus.bn}।${centreLine.bn} এখনো কোনো রেফারেল আইডি তৈরি হয়নি।`,
@@ -641,7 +670,7 @@ export function CareCompanion({
 
   function fixedNextStepExplanation(): Copy {
     if (isUrgent) return emergencyCopy;
-    if (currentRecord.screeningOutcome === SAFETY_OUTCOMES.CONTINUE) {
+    if (isContinueOutcome(currentRecord.screeningOutcome)) {
       return {
         bn: "এখন নির্দিষ্ট রেফারেল মানদণ্ড মেলেনি, তাই রেফারেল তৈরি হচ্ছে না। উপসর্গ থেকে গেলে, বেড়ে গেলে বা উদ্বেগ হলে চিকিৎসাসেবা নিন এবং প্রয়োজনে আবার স্ক্রিনিং করুন।",
         en: "No fixed referral criterion is met now, so no referral is being created. Seek medical care if symptoms persist, worsen, or concern you, and screen again if needed.",
@@ -649,20 +678,20 @@ export function CareCompanion({
     }
     if (currentRecord.followUpNeeded) {
       return {
-        bn: "পরবর্তী ধাপ: একটি সুবিধাজনক যক্ষ্মা সেবাকেন্দ্র বেছে নিন, তারপর একটি সম্ভাব্য দিন ঠিক করুন। কেন্দ্র দূরে বা কঠিন মনে হলে তালিকা থেকে অন্য কেন্দ্র বেছে নিন।",
-        en: "Next step: choose a TB centre that is practical for you, then pick a day you can go. If the centre is far or difficult, select a different one from the list.",
+        bn: "পরবর্তী ধাপ: একটি সুবিধাজনক সেবাকেন্দ্র বেছে নিন, তারপর একটি সম্ভাব্য দিন ঠিক করুন। কেন্দ্র দূরে বা কঠিন মনে হলে তালিকা থেকে অন্য কেন্দ্র বেছে নিন।",
+        en: "Next step: choose a care facility that is practical for you, then pick a day you can go. If it is far or difficult, select a different one from the list.",
       };
     }
     if (!centre) {
       return {
-        bn: "পরবর্তী ধাপ: ‘যক্ষ্মা সেবাকেন্দ্র দেখুন’ চেপে আপনার এলাকার জন্য একটি কেন্দ্র বেছে নিন। এরপর রেফারেলের পথে এগোনোর সিদ্ধান্ত দিন।",
-        en: "Next step: use ‘View TB centre’ to select a centre for your area. Then choose whether to continue to referral.",
+        bn: "পরবর্তী ধাপ: ‘সেবাকেন্দ্র দেখুন’ চেপে আপনার এলাকার জন্য একটি কেন্দ্র বেছে নিন। এরপর রেফারেলের পথে এগোনোর সিদ্ধান্ত দিন।",
+        en: "Next step: use ‘View care facilities’ to select a facility for your area. Then choose whether to continue to referral.",
       };
     }
     return currentRecord.referralStatus === "READY_TO_CONTINUE"
       ? {
-          bn: `পরবর্তী ধাপ: ${centre.name.bn}-এ গিয়ে আনুষ্ঠানিক যক্ষ্মা মূল্যায়ন করান। এটি রোগ নির্ণয় নয়; সেবাকেন্দ্রই উপযুক্ত পরীক্ষা করবে।`,
-          en: `Next step: go to ${centre.name.en} for formal TB evaluation. This is not a diagnosis; the centre will carry out the appropriate testing.`,
+          bn: `পরবর্তী ধাপ: ${centre.name.bn}-এ গিয়ে পেশাদার স্বাস্থ্য মূল্যায়ন করান। এটি রোগ নির্ণয় নয়; সেবাকেন্দ্রই উপযুক্ত পরীক্ষা ঠিক করবে।`,
+          en: `Next step: go to ${centre.name.en} for professional health evaluation. This is not a diagnosis; the facility will determine appropriate testing.`,
         }
       : {
           bn: `সেবাকেন্দ্র বেছে নেওয়া হয়েছে: ${centre.name.bn}। এখন ‘রেফারেলের পথে এগিয়ে যান’ চেপে সিদ্ধান্ত দিন। সিদ্ধান্ত আপনারই।`,
@@ -672,7 +701,7 @@ export function CareCompanion({
 
   async function explainNextStep() {
     const fixedExplanation = fixedNextStepExplanation();
-    if (isUrgent || currentRecord.screeningOutcome === SAFETY_OUTCOMES.CONTINUE) {
+    if (isUrgent || isContinueOutcome(currentRecord.screeningOutcome)) {
       setFeedback(fixedExplanation);
       return;
     }
@@ -828,7 +857,7 @@ export function CareCompanion({
               }} /></li>
             </ul>
           </div>
-          <strong><BilingualText copy={{ bn: "এখন সেবাকেন্দ্রের পরবর্তী নির্দেশনা অনুসরণ করুন।", en: "Now follow the TB centre's next instructions." }} /></strong>
+          <strong><BilingualText copy={{ bn: "এখন সেবাকেন্দ্রের পরবর্তী নির্দেশনা অনুসরণ করুন।", en: "Now follow the care facility's next instructions." }} /></strong>
         </ClayCard>
       )}
 
@@ -1001,7 +1030,7 @@ export function CareCompanion({
                   || currentRecord.followUp.nextAction === "SEEK_TRANSPORT_SUPPORT") && (
                   <button className="button button-secondary" type="button" onClick={() => setShowCentre(true)}>
                     <Icon name="location" />
-                    <BilingualText copy={{ bn: "কাছের সেবাকেন্দ্র দেখুন", en: "View nearby TB centres" }} />
+                    <BilingualText copy={{ bn: "কাছের সেবাকেন্দ্র দেখুন", en: "View nearby care facilities" }} />
                   </button>
                 )}
                 <button className="button button-quiet" type="button" onClick={() => {
@@ -1050,14 +1079,14 @@ export function CareCompanion({
             </small>
           </ClayCard>
           <ClayCard className="summary-card" as="article" data-summary="centre">
-            <span><BilingualText copy={{ bn: "নির্বাচিত কাছের সেবাকেন্দ্র", en: "Nearest selected TB centre" }} /></span>
+            <span><BilingualText copy={{ bn: "নির্বাচিত কাছের সেবাকেন্দ্র", en: "Nearest selected care facility" }} /></span>
             <strong>
               <BilingualText copy={centre ? centre.name : { bn: "এখনো বেছে নেওয়া হয়নি", en: "Not selected yet" }} />
             </strong>
             <small>
               <BilingualText copy={centre
-                ? { bn: `${centre.area.bn} · ${centre.serviceType.bn}`, en: `${centre.area.en} · ${centre.serviceType.en}` }
-                : { bn: "নিচের ‘যক্ষ্মা সেবাকেন্দ্র দেখুন’ থেকে বেছে নিন", en: "Choose one using ‘View TB centre’ below" }} />
+                ? { bn: `${centre.area.bn} · ${facilityServiceForPathway(centre, recordPathwayId).bn}`, en: `${centre.area.en} · ${facilityServiceForPathway(centre, recordPathwayId).en}` }
+                : { bn: "নিচের ‘সেবাকেন্দ্র দেখুন’ থেকে বেছে নিন", en: "Choose one using ‘View care facilities’ below" }} />
             </small>
           </ClayCard>
           <ClayCard className="summary-card" as="article" data-summary="next-action">
@@ -1075,7 +1104,7 @@ export function CareCompanion({
         <SectionHeading
           id="care-actions-title"
           title={{ bn: "সহজ চেক-আপ সহায়তা", en: "Simple check-up support" }}
-          description={{ bn: "শুধু যক্ষ্মা স্ক্রিনিং ও পরবর্তী সেবার জন্য দরকারি কাজগুলো।", en: "Only the actions needed for TB screening and care navigation." }}
+          description={{ bn: "আপনার নির্বাচিত স্বাস্থ্য উদ্বেগ ও পরবর্তী সেবার জন্য দরকারি কাজগুলো।", en: "Actions for your selected health concern and next care step." }}
         />
         <div className="care-action-grid">
           {referralPathwayAvailable && (
@@ -1093,7 +1122,7 @@ export function CareCompanion({
             data-action="view-centre"
           >
             <Icon name="location" />
-            <BilingualText copy={{ bn: "যক্ষ্মা সেবাকেন্দ্র দেখুন", en: "View TB centre" }} />
+            <BilingualText copy={{ bn: "সেবাকেন্দ্র দেখুন", en: "View care facilities" }} />
           </button>
           <button className="care-action" type="button" onClick={() => void checkReferralStatus()} disabled={referralBusy} data-action="check-referral">
             <Icon name="search" />
@@ -1150,7 +1179,7 @@ export function CareCompanion({
               <dl className="detail-list">
                 <div><dt><BilingualText copy={{ bn: "এলাকা", en: "Area" }} /></dt><dd><BilingualText copy={centre.area} /></dd></div>
                 <div><dt><BilingualText copy={{ bn: "জেলা", en: "District" }} /></dt><dd><BilingualText copy={centre.district} /></dd></div>
-                <div><dt><BilingualText copy={{ bn: "সেবার ধরন", en: "Service type" }} /></dt><dd><BilingualText copy={centre.serviceType} /></dd></div>
+                <div><dt><BilingualText copy={{ bn: "সেবার ধরন", en: "Service type" }} /></dt><dd><BilingualText copy={facilityServiceForPathway(centre, recordPathwayId)} /></dd></div>
               </dl>
               {recommendedCentreId && (
                 <StatusPill
@@ -1176,7 +1205,7 @@ export function CareCompanion({
           )}
 
           {rankedCentres.length > 0 && (
-            <div className="centre-rank-list" aria-label="নিকটতম যক্ষ্মা সেবাকেন্দ্রসমূহ / Nearest TB centres">
+            <div className="centre-rank-list" aria-label="নিকটতম সেবাকেন্দ্রসমূহ / Nearest care facilities">
               {rankedCentres.slice(0, 6).map((entry, index) => (
                 <button
                   key={entry.centre.id}

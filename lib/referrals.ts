@@ -1,8 +1,9 @@
-import type { SafetyOutcome } from "@/lib/safety-rules";
+import type { AgeBand, CareOutcome, PathwayAnswers, PathwayId } from "@/lib/care-pathways";
 
 export const REFERRAL_STATUSES = ["PENDING", "FOLLOW_UP", "COMPLETED", "CLOSED"] as const;
 export type ReferralStatus = (typeof REFERRAL_STATUSES)[number];
 
+/** Legacy TB answer shape retained for Telegram and older persisted care. */
 export type ReferralSymptomAnswers = {
   coughDays: number;
   fever: boolean;
@@ -17,14 +18,17 @@ export type CreateReferralInput = {
   patientId: string;
   sourceType: "SELF" | "PHARMACY";
   pharmacyId?: string;
+  pathwayId: PathwayId;
+  ruleVersion: string;
+  ageBand: AgeBand;
   areaName: string;
   areaLatitude: number;
   areaLongitude: number;
-  symptomAnswers: ReferralSymptomAnswers;
+  symptomAnswers: PathwayAnswers;
   audioStatus: "recorded" | "uploaded" | "skipped";
   audioHash?: string;
-  screeningResult: SafetyOutcome;
-  tbCenterId: string;
+  screeningResult: CareOutcome;
+  facilityId: string;
 };
 
 export type ReferralView = {
@@ -32,6 +36,8 @@ export type ReferralView = {
   accessToken: string;
   status: ReferralStatus;
   tbCenterId: string;
+  facilityId: string;
+  pathwayId: PathwayId;
   centreName: string;
   centreArea: string;
   centreDistrict: string;

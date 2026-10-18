@@ -31,7 +31,12 @@ export type ReferralRpcFunction =
   | "complete_part16_channel_event"
   | "release_part16_channel_event"
   | "get_part18_community_summary"
-  | "submit_part18_community_feedback";
+  | "submit_part18_community_feedback"
+  | "save_multisyndrome_screening"
+  | "create_multisyndrome_referral"
+  | "save_care_signal"
+  | "get_multisyndrome_summary"
+  | "record_public_health_action";
 
 const MAX_RPC_ATTEMPTS = 2;
 const TRANSIENT_RPC_STATUSES = new Set([500, 502, 503, 504]);
