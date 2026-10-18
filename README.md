@@ -19,7 +19,10 @@ It can be used independently from home or with assistance from a participating p
 - **Product requirements:** [PRD.md](PRD.md)
 - **Complete workflow guide:** [WORKFLOW_GUIDE.md](WORKFLOW_GUIDE.md)
 
-![First Signs landing page showing the multilingual care-navigation experience](docs/images/first-signs-home.png)
+<p align="center">
+  <img src="docs/images/first-signs-landing-overview.png" alt="Updated First Signs landing page showing multilingual multi-syndrome care navigation">
+  <br><strong>Figure 1 — First Signs landing page.</strong> The redesigned entry presents the care-navigation purpose, language control, and self-use or pharmacy-assisted routes.
+</p>
 
 ## The story behind First Signs
 
@@ -83,46 +86,83 @@ No single disease defines the product. Each pathway has its own fixed rules and 
 
 ### Mobile-first multilingual experience
 
-<table>
-  <tr>
-    <td align="center"><strong>English</strong></td>
-    <td align="center"><strong>বাংলা</strong></td>
-  </tr>
-  <tr>
-    <td><img src="docs/images/first-signs-screening.png" alt="First Signs mobile screening entry in English" width="390"></td>
-    <td><img src="docs/images/first-signs-screening-bangla.png" alt="First Signs mobile screening entry in Bangla" width="390"></td>
-  </tr>
-</table>
+English is the default language, and Bangla remains available through the persistent language toggle on every user-facing route. These are the two languages implemented in the current release; the language system is designed to add fully reviewed languages later. The application uses **Merriweather** for English and **Noto Sans Bengali** for Bangla, including forms, alerts, dashboards, loading states, validation, and mixed-language content.
 
-English is the default language, and Bangla remains available through the persistent language toggle. These are the two languages implemented in the current release; the language system is designed to add fully reviewed languages later. The application uses **Merriweather** for English and **Noto Sans Bengali** for Bangla, including forms, alerts, dashboards, loading states, validation, and mixed-language content.
+The updated interface uses responsive layouts that preserve the same care hierarchy on desktop and mobile. The screenshots below document the current UI and important screening, safety, and assisted-access states.
 
-## Product gallery
-
-These public screens show how the same visual and safety language continues beyond the first screening.
+## Updated product gallery
 
 <table>
   <tr>
     <td width="50%" valign="top">
-      <img src="docs/images/first-signs-my-care.png" alt="First Signs My Care page for reopening a private care journey">
-      <br><strong>My Care</strong><br>
-      Reopen a private journey using a care ID or a phone number previously saved on the same device.
+      <img src="docs/images/first-signs-landing-entry-options.png" alt="Updated First Signs landing page with care entry choices">
+      <br><strong>Figure 2 — Landing and entry choices.</strong><br>
+      The main experience presents the product promise and separates independent and pharmacy-assisted entry.
     </td>
     <td width="50%" valign="top">
-      <img src="docs/images/first-signs-assistant.png" alt="First Signs multilingual health and care-navigation assistant">
-      <br><strong>Health assistant</strong><br>
-      Ask general health and navigation questions while keeping diagnosis, prescribing, and safety decisions outside the assistant.
+      <img src="docs/images/first-signs-screening-introduction.png" alt="First Signs screening introduction explaining care navigation">
+      <br><strong>Figure 3 — Screening introduction.</strong><br>
+      The screening route explains that it provides care navigation rather than diagnosis before questions begin.
     </td>
   </tr>
   <tr>
     <td width="50%" valign="top">
-      <img src="docs/images/first-signs-medicines.png" alt="First Signs Medicine Corner with plain-language safety information">
-      <br><strong>Medicine Corner</strong><br>
-      Read general information, cautions, and verified-source links without receiving a personal dose or prescription.
+      <img src="docs/images/first-signs-pathway-questionnaire.png" alt="First Signs pathway questionnaire with structured warning-sign questions">
+      <br><strong>Figure 4 — Pathway questionnaire.</strong><br>
+      Structured answers feed the fixed safety rules while broad-area selection avoids storing an exact home location.
     </td>
     <td width="50%" valign="top">
-      <img src="docs/images/first-signs-community.png" alt="First Signs anonymous community barriers-to-care page">
-      <br><strong>Community feedback</strong><br>
-      Share a general barrier to care without providing a name, phone number, free text, or disease status.
+      <img src="docs/images/first-signs-pharmacy-qr-directory.png" alt="First Signs pharmacy QR directory with assisted-entry choices">
+      <br><strong>Figure 5 — Pharmacy QR directory.</strong><br>
+      A person can start an assisted journey through a clearly identified participating pharmacy.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/images/first-signs-pharmacy-assisted-screening.png" alt="First Signs pharmacy-assisted screening with pharmacy identity and pathway choices">
+      <br><strong>Figure 6 — Pharmacy-assisted screening.</strong><br>
+      The assisted route displays the pharmacy context while keeping every care pathway available.
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/images/first-signs-urgent-guidance.png" alt="First Signs urgent medical guidance and care journey status">
+      <br><strong>Figure 7 — Urgent safety guidance.</strong><br>
+      Danger signs take precedence and produce a prominent emergency action without claiming a diagnosis.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/images/first-signs-cough-audio.png" alt="First Signs optional cough recording and audio upload controls">
+      <br><strong>Figure 8 — Optional cough-audio step.</strong><br>
+      The respiratory pathway can record or upload audio while fixed symptom rules remain authoritative.
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/images/first-signs-my-care-access.png" alt="First Signs My Care page for reopening a private care journey">
+      <br><strong>Figure 9 — My Care access.</strong><br>
+      A person can reopen a private journey using a care ID or a phone number previously saved on the device.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/images/first-signs-health-assistant.png" alt="First Signs multilingual health and care-navigation assistant">
+      <br><strong>Figure 10 — Bounded health assistant.</strong><br>
+      The assistant answers general health and navigation questions but cannot diagnose, prescribe, or change safety results.
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/images/first-signs-assistant-media-input.png" alt="First Signs assistant with temporary image and audio attachments">
+      <br><strong>Figure 11 — Assistant media input.</strong><br>
+      Optional image and audio attachments provide transient context and are not retained as conversational memory.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/images/first-signs-medicine-corner.png" alt="First Signs Medicine Corner with general medicine safety information">
+      <br><strong>Figure 12 — Medicine Corner.</strong><br>
+      General information, cautions, and source links are provided without personal dosing or prescriptions.
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/images/first-signs-community-feedback.png" alt="First Signs anonymous community barriers-to-care page">
+      <br><strong>Figure 13 — Community feedback.</strong><br>
+      People can share structured barriers to care without providing identity, free text, or disease status.
     </td>
   </tr>
 </table>
