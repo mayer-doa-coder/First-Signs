@@ -51,6 +51,26 @@ export function isGeminiConfigured() {
   return Boolean(process.env.GEMINI_API_KEY?.trim());
 }
 
+export type HealthAssistantAiResponse = { answerBn: string; answerEn: string };
+export type HealthAssistantAttachment = { mimeType: string; base64: string };
+
+export async function requestGeminiHealthAssistant(prompt: string, attachment?: HealthAssistantAttachment): Promise<HealthAssistantAiResponse> {
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  if (!apiKey) throw new Error("AI_NOT_CONFIGURED");
+  const request = async (model: string) => fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+    method: "POST", headers: { "content-type": "application/json", "x-goog-api-key": apiKey }, cache: "no-store", signal: AbortSignal.timeout(GEMINI_TIMEOUT_MS),
+    body: JSON.stringify({ systemInstruction: { parts: [{ text: "You are First Signs, a cautious bilingual TB-first health education companion for Bangladesh. Use only supplied sources and activity context. Never diagnose TB, prescribe, recommend doses, start or stop medicines, calculate probability, or replace urgent instructions. An image or audio clip is supporting context only: do not identify medicine, confirm a condition, or make a personal clinical conclusion from it. If sources or the media are insufficient, say clearly that you do not know. For personal medicine questions, advise a clinician or pharmacist. Do not repeat identifiers. Return concise Bangla and English answers." }] }, contents: [{ role: "user", parts: [{ text: prompt }, ...(attachment ? [{ inlineData: { mimeType: attachment.mimeType, data: attachment.base64 } }] : [])] }], generationConfig: { temperature: 0.05, maxOutputTokens: 700, responseMimeType: "application/json", responseSchema: { type: "object", properties: { answerBn: { type: "string" }, answerEn: { type: "string" } }, required: ["answerBn", "answerEn"] } } }),
+  });
+  for (const model of [configuredModel(), FALLBACK_GEMINI_MODEL]) {
+    try {
+      const response = await request(model); if (!response.ok) continue;
+      const payload = await response.json() as GeminiResponse; const text = responseText(payload); const output = JSON.parse(text) as Record<string, unknown>;
+      if (typeof output.answerBn === "string" && typeof output.answerEn === "string" && output.answerBn.length >= 3 && output.answerBn.length <= 700 && output.answerEn.length >= 3 && output.answerEn.length <= 700 && !/আপনার যক্ষ্মা হয়েছে|আপনার যক্ষ্মা নেই/u.test(output.answerBn) && !/you (?:definitely )?(?:have|do not have) tb|tb probability/i.test(output.answerEn)) return { answerBn: output.answerBn.trim(), answerEn: output.answerEn.trim() };
+    } catch { /* try the safe fallback model */ }
+  }
+  throw new Error("AI_PROVIDER_FAILED");
+}
+
 function responseText(payload: GeminiResponse) {
   return payload.candidates?.[0]?.content?.parts
     ?.map((part) => part.text ?? "")
