@@ -23,6 +23,7 @@
     "test:ai": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test scripts/check-ai-companion.test.mts",
     "test:ai-browser": "node scripts/check-ai-companion.mjs",
     "test:ai-live": "node scripts/check-ai-companion-live.mjs",
+    "test:medicines": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test scripts/check-medicine-corner.test.mts",
     "test:messaging": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test scripts/check-messaging-channels.test.mts",
     "telegram:webhook:set": "node scripts/configure-telegram-webhook.mjs set",
     "telegram:webhook:status": "node scripts/configure-telegram-webhook.mjs status",
@@ -34,12 +35,15 @@
     "test:final": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-final-quality.ps1"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.118.0",
     "maplibre-gl": "^6.9.0",
     "motion": "^14.3.0",
     "next": "16.3.8",
     "qrcode": "^1.5.4",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "resend": "^6.34.1"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

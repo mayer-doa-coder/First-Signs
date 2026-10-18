@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { broadAreas, type BroadAreaId } from "@/lib/broad-areas";
 import type { GovernmentAreaActivity, GovernmentDashboardData, HotspotLevel } from "@/lib/government-dashboard";
 import { callReferralRpc, isReferralDatabaseConfigured } from "@/lib/supabase-server";
+import { currentAuthUser, hasRole, isAccountAuthConfigured } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
@@ -144,6 +145,11 @@ function toDashboard(row: Record<string, unknown>): GovernmentDashboardData | nu
 }
 
 export async function GET() {
+  if (isAccountAuthConfigured()) {
+    const user = await currentAuthUser();
+    if (!user) return errorResponse("AUTH_REQUIRED", 401);
+    if (!await hasRole(user.id, "GOVERNMENT_VIEWER")) return errorResponse("GOVERNMENT_ACCESS_DENIED", 403);
+  }
   if (!isReferralDatabaseConfigured()) {
     return errorResponse("GOVERNMENT_DASHBOARD_BACKEND_NOT_CONFIGURED", 503);
   }

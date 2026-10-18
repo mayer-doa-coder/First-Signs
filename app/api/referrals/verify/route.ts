@@ -9,6 +9,7 @@ import {
 import { callReferralRpc, isReferralDatabaseConfigured } from "@/lib/supabase-server";
 import { getTbCentre } from "@/lib/tb-centres";
 import { isTbCentreAccessConfigured, verifyTbCentreStaffPin } from "@/lib/tb-centre-access";
+import { currentAuthUser, currentMemberships, isAccountAuthConfigured } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
@@ -36,11 +37,18 @@ function errorResponse(error: string, status: number) {
   return NextResponse.json({ error }, { status, headers: responseHeaders });
 }
 
-function accessError(request: Request) {
-  if (!isTbCentreAccessConfigured()) return errorResponse("TB_CENTRE_ACCESS_NOT_CONFIGURED", 503);
-  if (!verifyTbCentreStaffPin(request.headers.get("x-jvh-tb-centre-pin"))) {
-    return errorResponse("TB_CENTRE_ACCESS_DENIED", 401);
+async function accessError(request: Request, tbCenterId?: string) {
+  if (isAccountAuthConfigured()) {
+    const user = await currentAuthUser();
+    if (user) {
+      const memberships = await currentMemberships(user.id);
+      const membership = memberships.find((candidate) => candidate.role === "TB_CENTRE_STAFF" && candidate.tb_center_id);
+      if (!membership || (tbCenterId && membership.tb_center_id !== tbCenterId)) return errorResponse("TB_CENTRE_ACCESS_DENIED", 403);
+      return null;
+    }
   }
+  if (!isTbCentreAccessConfigured()) return errorResponse("TB_CENTRE_ACCESS_NOT_CONFIGURED", 503);
+  if (!verifyTbCentreStaffPin(request.headers.get("x-jvh-tb-centre-pin"))) return errorResponse("TB_CENTRE_ACCESS_DENIED", 401);
   return null;
 }
 
@@ -96,7 +104,7 @@ function toVerificationView(row: VerificationRpcRow): VerificationReferralView |
 }
 
 export async function GET(request: Request) {
-  const denied = accessError(request);
+  const denied = await accessError(request);
   if (denied) return denied;
   const query = new URL(request.url).searchParams;
   const lookup = parseLookup(query.get("referralId"), query.get("token"));
@@ -110,6 +118,8 @@ export async function GET(request: Request) {
     );
     const referral = rows[0] ? toVerificationView(rows[0]) : null;
     if (!referral) return errorResponse("REFERRAL_NOT_FOUND", 404);
+    const scopedDenied = await accessError(request, referral.tbCenterId);
+    if (scopedDenied) return scopedDenied;
     return NextResponse.json({ referral }, { headers: responseHeaders });
   } catch {
     return errorResponse("REFERRAL_VERIFY_FETCH_FAILED", 502);
@@ -117,8 +127,6 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const denied = accessError(request);
-  if (denied) return denied;
   let body: Record<string, unknown>;
   try {
     const value: unknown = await request.json();
@@ -131,6 +139,8 @@ export async function POST(request: Request) {
   const lookup = parseLookup(body.referralId, body.token);
   const tbCenterId = typeof body.tbCenterId === "string" ? body.tbCenterId.trim() : "";
   if (!lookup || !getTbCentre(tbCenterId)) return errorResponse("INVALID_CONFIRMATION_REQUEST", 400);
+  const denied = await accessError(request, tbCenterId);
+  if (denied) return denied;
   if (!isReferralDatabaseConfigured()) return errorResponse("REFERRAL_BACKEND_NOT_CONFIGURED", 503);
 
   try {

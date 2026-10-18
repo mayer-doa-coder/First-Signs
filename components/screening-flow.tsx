@@ -441,6 +441,13 @@ export function ScreeningFlow({
 
       {stage === "audio" && (
         <CoughAudioStep
+          triageInputs={{
+            coughDays,
+            fever: answers.fever === "yes",
+            nightSweats: answers.nightSweats === "yes",
+            weightLoss: answers.weightLoss === "yes",
+            bloodInSputum: answers.bloodInSputum === "yes",
+          }}
           onBack={() => setStage("questions")}
           onContinue={(choice, nextAudioHash) => {
             setAudioChoice(choice);
@@ -580,6 +587,7 @@ export function ScreeningFlow({
           <div className="button-row screening-complete-actions">
             {createdReferral && <ActionLink href={referralLinkFor(createdReferral.accessToken)} icon="document" label={{ bn: "রেফারেল ও কিউআর দেখুন", en: "View referral and QR" }} />}
             {patientId && <ActionLink href={careHref} icon="care" label={isSelfUse ? { bn: "আমার সেবা", en: "My Care" } : { bn: "সেবার তথ্য দেখুন", en: "View care information" }} />}
+            {patientId && isSelfUse && <ActionLink href={`/account?saveCare=${encodeURIComponent(patientId)}`} icon="users" label={{ bn: "অ্যাকাউন্টে সেবা সংরক্ষণ", en: "Save care to account" }} />}
             <button className="button button-secondary" type="button" onClick={clearSession}>
               <BilingualText copy={{ bn: "উত্তর মুছে নতুন করে শুরু করুন", en: "Clear answers and start again" }} />
             </button>

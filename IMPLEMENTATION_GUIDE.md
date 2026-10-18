@@ -22,6 +22,14 @@ Copy `.env.example` to `.env.local` for local development, replace placeholders,
 - Implement all user-facing copy in English and Bangla from the first version. English is the default; Bangla is always available through the persistent language toggle.
 - Keep safety outcome codes language-neutral and render equivalent safety meaning in both languages.
 
+## Optional accounts and role workspaces
+
+- Keep screening available without sign-in. Offer passwordless email access when a person wants to save their own My Care journey.
+- Use invite-only memberships for pharmacy, TB-centre, government, and platform-admin workspaces; a public sign-up never selects a staff role.
+- A patient may see only their own care journey. Pharmacy and government views must never show patient identity, symptoms, audio, or referral tokens.
+- Use `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` for browser authentication only. Keep Supabase secret keys and `RESEND_API_KEY` server-only.
+- Configure Supabase Auth with the deployed `/auth/callback` URL and Resend SMTP before sending passwordless links or invitations. Schedule a server-side POST to `/api/reminders/send` with `x-reminder-cron-secret`; it sends only the generic First Signs reminder text.
+
 ## Typography foundation — required from the start
 
 - Use only **Noto Sans Bengali** for Bangla and **Merriweather** for English; do not add another font family without approval.
@@ -441,7 +449,7 @@ Label it:
 
 **Prototype acoustic result**
 
-The prototype values must be visibly marked as fixed demonstration output. They must not be presented as the result of a real cough model and must not change the fixed Step 21 safety outcome.
+The prototype values must be visibly marked as fixed demonstration output. They must not be presented as the result of a real cough model and must not change the fixed Step 21 safety outcome. Do not display a made-up TB percentage.
 
 ## Step 24 — Keep the cough result secondary
 
@@ -930,6 +938,66 @@ Implementation boundary:
 - never send urgent guidance to AI, and never let an AI response alter the deterministic screening outcome,
 - if Gemini is unavailable, keep the fixed barrier choices and fixed next-step guidance fully usable.
 
+## Step 56A — Add the opt-in TB-first daily companion
+
+- Add a separate `/assistant` experience. Anonymous visitors receive only
+  non-persistent general education. Signed-in people may opt in to private
+  activity context and conversation memory; both controls default off and may
+  be cleared or disabled at any time.
+- Keep assistant messages and preferences in a private, account-owned data
+  store. Never show them in pharmacy, TB-centre, government, public, referral,
+  or aggregate workflows; never use them to train a model.
+- Retrieve only from an approved source allow-list (for example WHO and the
+  Bangladesh NTP). Any server-side web refresh must keep the source URL,
+  retrieve a bounded excerpt, discard it after the response, and show that URL
+  to the person. Never treat arbitrary web pages or user-provided URLs as RAG
+  knowledge.
+- Supply the model only a minimal, identifier-free summary of enabled My Care
+  activity: care saved, referral stage, follow-up action, and pending-reminder
+  count. The deterministic safety result remains outside the prompt and is
+  rendered by the app.
+- Do not give dosage, start/stop instructions, interaction guarantees, or a
+  treatment plan. For medicine questions, offer general education, advise a
+  pharmacist/clinician for personal use, and preserve fixed urgent guidance.
+- Accept only JPEG, PNG, WebP, WAV, OGG, WebM, M4A, or MPEG assistant media
+  with server-side signature and size validation. Forward valid bytes only for
+  the current multimodal inference, never persist the bytes, and do not retain
+  them in conversational memory. Images and audio are supporting context, not
+  evidence that can identify a medicine, diagnose, or determine dosage.
+- Use structured model output plus application validation and citations. This
+  reduces unsupported answers but cannot make hallucination mathematically
+  impossible; the explicit product behavior for insufficient approved evidence
+  is a direct "I do not know" answer and referral to a clinician/pharmacist or
+  urgent guidance.
+
+## Step 56B — Add the medicine education catalogue
+
+- Add `/medicines` as a client-side searchable page backed by a versioned local
+  generic-medicine catalogue. Keep at least 100 unique generic entries; search
+  English and Bangla names, category, and broad general-use copy without a
+  network call or patient-data collection.
+- Use a small `Medicine` schema with bilingual generic name, category, general
+  use, general caution, urgent warning signs, and a source URL. Do not add a
+  dose, a prescription instruction, treatment recommendation, stock status,
+  price, brand endorsement, or Bangladesh-availability assertion.
+- Link non-TB entries to the official DailyMed label search and TB entries to
+  official WHO TB guidance. Explain in the UI that DailyMed is a U.S. label
+  resource and that local packs/registration can differ.
+- Add an on-demand server route that uses DailyMed generic search results, then
+  obtains each individual SPL's product packaging and media. Render a photo
+  only for an exact returned label product with its DailyMed title, product and
+  generic name, ingredients/strength where supplied, NDC, and label URL.
+  Accept only `https://dailymed.nlm.nih.gov/dailymed/image.cfm` image URLs;
+  never trust an arbitrary remote image URL. The images are U.S. label media,
+  not Bangladesh product images. Require a clear U.S.-product notice, keep the
+  neutral medicine icon as the default, and do not present photos as an
+  identification or authenticity tool. Bangladesh imagery stays disabled until
+  an official or licensed product-level source is integrated.
+- Keep the page fully bilingual, English-first, mobile-friendly, and compliant
+  with the existing Merriweather/Noto Sans Bengali typography system. Add an
+  automated test for the count, unique IDs, bilingual content, warning fields,
+  and official-source URL host allow-list.
+
 ---
 
 # Part 16 — Connect WhatsApp and Telegram
@@ -1009,7 +1077,7 @@ The setup command registers only `message` updates at `https://<public-host>/api
 
 ---
 
-# Part 17 — Add Real HeAR Only If Needed
+# Part 17 — Add Real HeAR and an Investigational TB-Triage Score Only If Needed
 
 ## Step 62 — Read the HeAR model card
 
@@ -1019,7 +1087,7 @@ Remember:
 
 HeAR 1.0.0 expects 16 kHz mono audio in two-second windows and creates a 512-value health-audio embedding. The base model is too large for the web client, so keep it in a separately hosted server-side inference service.
 
-HeAR is an embedding model, not a cough classifier and not a TB diagnostic model. Use the bundled Google health-event detector only to locate a cough-like window. Train a small regularized classifier on frozen embeddings for cough presence only; do not fine-tune the HeAR base model without a suitable clinical dataset and separate validation.
+HeAR is an embedding model, not a cough classifier and not a TB diagnostic model. Use the bundled Google health-event detector only to locate a cough-like window. Train a small regularized classifier on frozen embeddings for cough presence. Do not fine-tune the HeAR base model without a suitable clinical dataset and separate validation.
 
 ## Step 63 — Test HeAR separately
 
@@ -1035,7 +1103,7 @@ Use the official `google/hear` TensorFlow artifact when the gated PyTorch reposi
 
 For the prototype classifier, prepare a balanced CoughVID subset using high-confidence weak cough-presence labels (`cough_detected >= 0.95` and `<= 0.05`). Split by recording identity into train, validation, and held-out test sets. Choose the threshold on validation data and publish held-out metrics in the classifier artifact. CoughVID is not a TB dataset and must not be used for TB prediction.
 
-## Step 64 — Replace only the demo acoustic value
+## Step 64 — Replace the demo acoustic value and, only with authorised data, add a triage score
 
 If it works reliably:
 
@@ -1043,9 +1111,16 @@ If it works reliably:
 2. use the official detector to select the most cough-like two-second window,
 3. create a 512-value HeAR embedding,
 4. apply the versioned cough-presence classifier,
-5. return only `COUGH_LIKE_SIGNAL_PRESENT`, `NO_COUGH_LIKE_SIGNAL_DETECTED`, or `INCONCLUSIVE`.
+5. return `COUGH_LIKE_SIGNAL_PRESENT`, `NO_COUGH_LIKE_SIGNAL_DETECTED`, or `INCONCLUSIVE`, and
+6. only when an independently versioned, authorised, calibrated TB-triage classifier is installed, return an investigational triage score and concern band.
 
-Do not return a TB probability, detector score, embedding, or raw audio to the browser. Keep the rest of the product unchanged and do not persist raw audio or embeddings.
+The triage classifier must be trained on cough recordings with microbiological TB reference labels, not CoughVID. Its data source must have explicit terms permitting the intended research use. Do not use a Hugging Face mirror, checkpoint, or GitHub repository that lacks a model card, data provenance, licence/terms, and reproducible evaluation. Treat the Jaga repository as an architectural reference only unless the licence and provenance of every imported weight and its upstream data are independently verified.
+
+At the time this guide was updated, the most useful non-CODA research lead is TBscreen: its public release documents 149 pulmonary-TB and 46 non-TB participants, 33,000 passive and 1,600 forced coughs, recording devices, code, and metadata. Its raw audio exists only for consented rows and its large data download is hosted separately from the code release. Verify the dataset's current terms before downloading or training; do not infer permission from the code archive's CC-BY-4.0 licence. A public Hugging Face ZIP named `AHFIDAILabs/coda_tb_dataset` has no dataset card or licence metadata and remains an unverified lead.
+
+Keep the model and score server-side. Do not return embeddings or raw audio to the browser and do not persist either. Return a score only as `researchEstimate` together with `ELEVATED_ACOUSTIC_CONCERN`, `LOWER_ACOUSTIC_CONCERN`, or `INCONCLUSIVE`; never label it diagnosis, confirmation, or rule-out. A percentage may be displayed only with the UI label “Investigational research triage estimate — not your probability of TB” and equivalent Bangla copy.
+
+Before enabling a score, publish the model and dataset version, cohort/reference standard, person-disjoint split, sensitivity, specificity, ROC-AUC, calibration assessment, confidence intervals, and known external-validation limits. A score may add a recommendation to seek formal evaluation but must never cancel, downgrade, or replace the fixed Step 21 result or deny a referral.
 
 ## Step 65 — Keep a fallback
 

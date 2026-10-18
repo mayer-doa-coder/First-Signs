@@ -21,7 +21,7 @@ The main care journey is:
 
 **home / anywhere OR pharmacy → screening → care navigation → referral → government TB centre → completed formal evaluation**
 
-The product does **not** diagnose TB.
+The product does **not** diagnose TB. It may show a separately labelled, optional **investigational acoustic TB-triage score** only when the requirements in Section 10A are met. The score is a research signal for whether a cough recording resembles the model's validated TB-screening cohort; it is not a diagnosis, a confirmed probability that a person has TB, or a substitute for clinical assessment and microbiological testing.
 
 ## Language Requirement
 
@@ -120,8 +120,8 @@ All money shown in the prototype must be clearly marked as **illustrative / simu
 7. Patient answers a small number of TB symptom and risk questions.
 8. Patient is asked to send or record a cough sample.
 9. The system checks whether the audio is usable.
-10. The system produces an **experimental acoustic screening signal**.
-11. The fixed safety rule uses only the documented symptom inputs. The optional acoustic signal is shown separately and can never change or downgrade that result.
+10. The system produces an **experimental acoustic screening signal** and, when a validated research model is available, may show an investigational acoustic TB-triage score.
+11. The fixed safety rule uses only the documented symptom inputs. The optional acoustic signal and triage score are shown separately and can never change or downgrade that result.
 12. If formal TB evaluation is recommended, the system shows a nearby verified TB centre.
 13. Patient accepts the referral.
 14. System creates a one-time referral ID / QR code.
@@ -150,6 +150,15 @@ These are required for the hackathon prototype.
 - screening result wording
 - referral recommendation
 - simple companion-style follow-up
+- optional passwordless account sign-in after or before screening; anonymous screening remains available
+- a private My Care area for the person's own screening, referral, attendance, follow-up, and consented reminders; it must not diagnose TB or manage treatment
+
+### Account and Staff Access
+
+- Patient accounts use an optional passwordless email link and may store a name and optional Bangladesh phone number.
+- Pharmacy, TB-centre, and government accounts are invite-only and receive only their assigned workspace.
+- Government information remains anonymous and aggregated; pharmacy users never see private self-use patient information; TB-centre staff independently confirm attendance only for their assigned centre.
+- Reminder email is optional and generic: it must not contain symptoms, referral identifiers, centre details, or diagnostic wording.
 
 ### B. TB Centre Finder
 
@@ -247,6 +256,65 @@ Examples:
 
 Medical safety decisions should remain fixed rules.
 
+### A1. TB-first Daily Health Companion
+
+Provide a bilingual daily companion focused on TB education, care navigation,
+and basic medicine information. It may answer general health-education
+questions, but it must not diagnose, prescribe, calculate a personal treatment
+plan, or replace a clinician or pharmacist.
+
+- Use retrieval-augmented generation from an approved, versioned source set.
+  Server-side refreshes may fetch only approved official health-source pages;
+  do not use open-web search results or arbitrary scraped pages as medical
+  evidence. Show the sources used with each answer.
+- Signed-in people may explicitly enable private activity context. The assistant
+  can then use only that person's My Care status, reminders, and confirmed
+  follow-up state to make a practical suggestion. It must never expose this
+  context to pharmacy, TB-centre, government, public, or other account views.
+- "Learning" means user-controlled conversational memory and retrieval, never
+  training a model on patient conversations or silently profiling a person.
+  Let the person inspect, clear, or disable saved memory and activity context.
+- Urgent symptoms and deterministic screening outcomes always take precedence.
+  The assistant must direct emergency concerns to the existing urgent guidance
+  and must not downgrade or reinterpret it.
+- Support optional voice recording/audio upload and image upload for a single
+  assistant turn. Validate allowed media types and signatures server-side,
+  discard the bytes immediately after inference, and never retain media in
+  chat memory. Treat media as supporting context only: it cannot identify a
+  medicine, diagnose a condition, or determine a dose.
+- No generative model can guarantee zero hallucinations. Require the assistant
+  to answer only when approved retrieved sources support it; otherwise it must
+  state that it does not know and direct the person to a clinician/pharmacist
+  or the existing urgent path as appropriate.
+
+### A2. Medicine Corner
+
+Provide a bilingual, searchable Medicine Corner with at least 100 common
+generic medicine ingredients. It is a public education aid, not a prescription
+tool, stock catalogue, medicine-recognition tool, or a way to diagnose or treat
+a person.
+
+- For every medicine, show the generic name, broad medicine category, a short
+  general-use description, a general caution, urgent warning signs, and a link
+  to an authoritative label or guideline source. Do not provide a dose,
+  individualized interaction decision, start/stop instruction, or claim that a
+  medicine is available, registered, safe, or suitable in Bangladesh.
+- The first release uses DailyMed label-search links for non-TB entries and WHO
+  TB guidance for TB entries. These are source links, not a statement that a
+  U.S. label or product pack applies in Bangladesh. The local pack and a
+  pharmacist/clinician remain the source for a person's actual medicine.
+- Product photographs may be shown only after a person requests a verified,
+  exact product-label match. Display the source title, product/generic name,
+  active ingredient/strength where present, NDC, manufacturer label text, and
+  source link with the image. Current images come from U.S. DailyMed label
+  media and must be labelled as U.S. products that may not match Bangladesh
+  packaging. Do not use a generic name alone to select a product photo, and
+  explicitly tell people not to identify a medicine from a photo, colour, or
+  look-alike name. Bangladesh product imagery remains disabled until a licensed
+  or official product-level image source is available.
+- Never present the catalogue as a substitute for urgent care. Keep the fixed
+  urgent guidance and all existing TB referral and screening flows unchanged.
+
 ### B. WhatsApp and Telegram Connection
 
 Connect the already-working patient flow to WhatsApp and Telegram. Both channels must support self-use and pharmacy-assisted entry while reusing the same consent, fixed clinical safety rules, patient records, screening persistence, referral workflow, and follow-up workflow as the website.
@@ -273,13 +341,21 @@ This directly supports the hackathon's marketing and community-engagement criter
 
 Only build these after everything above is stable.
 
-### A. Real HeAR Cough Processing
+### A. Real HeAR Cough Processing and Investigational TB-Triage Score
 
-Use the official Google HeAR 1.0.0 TensorFlow model with 16 kHz mono, two-second audio windows to create 512-value embeddings. Use Google's bundled health-event detector to locate the most cough-like window and a small, regularized downstream classifier trained on frozen HeAR embeddings to estimate **cough presence only**.
+Use the official Google HeAR 1.0.0 TensorFlow model with 16 kHz mono, two-second audio windows to create 512-value embeddings. Use Google's bundled health-event detector to locate the most cough-like window and a small, regularized downstream classifier trained on frozen HeAR embeddings to estimate cough presence.
 
-The downstream classifier may be trained with balanced, high-confidence CoughVID weak labels under its CC BY 4.0 licence. Split by recording identity before training, choose the decision threshold on a validation split, and report metrics on a separate held-out split. Do not use or claim access to private clinical datasets. Record the dataset version, model version, classifier version, split method, threshold, and measured evaluation results with the artifact.
+The cough-presence classifier may be trained with balanced, high-confidence CoughVID weak labels under its CC BY 4.0 licence. Split by recording identity before training, choose the decision threshold on a validation split, and report metrics on a separate held-out split. CoughVID is not a TB dataset and must not be used to train or validate the TB-triage score.
 
-For the prototype, this remains an **experimental cough-presence signal only**. It must never estimate TB probability, diagnose TB, determine referral eligibility, or change the deterministic Section 14 safety outcome. Raw audio and the 512-value embedding are transient and must not be persisted by this workflow. If decoding, model loading, or inference fails, show the documented symptom-based fallback and keep the care-navigation flow usable.
+The optional TB-triage classifier requires a separately authorised dataset containing cough recordings and microbiological TB reference labels. Before a dataset or a released third-party weight may be used, record its source URL, version or revision, licence/terms, population, reference standard, recording protocol, class balance, split method, and evaluation results. A Hugging Face mirror or repository without a dataset card, licence/terms, model card, and data provenance is an unverified lead and must not be used for training or inference. A repository licence alone does not establish that its model weights or upstream medical data may be reused.
+
+For the hackathon, the only permitted patient-facing interpretation is an **investigational acoustic TB-triage score** with a companion concern band: `ELEVATED_ACOUSTIC_CONCERN`, `LOWER_ACOUSTIC_CONCERN`, or `INCONCLUSIVE`. A displayed percentage is permitted only when the versioned model has a calibration report for a defined reference population, and it must be labelled in both languages as a research triage estimate rather than the person's probability of TB. Never call it a diagnosis, confirmation, or rule-out.
+
+The triage score must not determine referral eligibility, must never lower or replace the deterministic Section 14 safety outcome, and must not be used to withhold testing. An elevated score may add a bilingual recommendation for formal evaluation; a lower or inconclusive score must retain all symptom-based safety recommendations. Raw audio and embeddings are transient and must not be persisted by this workflow. If decoding, model loading, or inference fails, show the documented symptom-based fallback and keep the care-navigation flow usable.
+
+The published model artifact must include person-disjoint train/validation/held-out splits, sensitivity, specificity, ROC-AUC, calibration, confidence intervals, subgroup results where available, and a documented external-validation limitation. It must state that evidence from one country, phone type, recording workflow, or referral population does not establish performance in Bangladesh.
+
+Current research leads are the TBscreen cohort and code release, the CODA TB DREAM Challenge data access programme, and the Jaga investigational implementation. They are not interchangeable assets: the project must verify the separate licence/terms for each dataset, codebase, model weight, and derivative before use. In particular, a repository's MIT or Apache licence does not automatically grant rights to use its training data or trained medical-model weights.
 
 ### B. Advanced Fraud Detection
 
@@ -539,6 +615,9 @@ These are recommendations, not requirements.
 - HeAR getting started: https://developers.google.com/health-ai-developer-foundations/hear/get-started
 - HeAR GitHub: https://github.com/Google-Health/hear
 - HeAR PyTorch model: https://huggingface.co/google/hear-pytorch
+- TBscreen data and reproducible code: https://zenodo.org/records/10431329
+- CODA TB DREAM Challenge: https://www.synapse.org/TBcough
+- Jaga investigational triage implementation: https://github.com/AMD-Hackathon-ISPM/jaga
 
 ### WhatsApp
 - WhatsApp Developer Hub: https://whatsappbusiness.com/developers/developer-hub/

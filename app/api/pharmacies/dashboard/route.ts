@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getActivePharmacy } from "@/lib/pharmacies";
 import type { PharmacyDashboardData } from "@/lib/pharmacy-dashboard";
 import { callReferralRpc, isReferralDatabaseConfigured } from "@/lib/supabase-server";
+import { currentAuthUser, currentMemberships, isAccountAuthConfigured } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
@@ -79,7 +80,14 @@ function toDashboard(row: Record<string, unknown>): PharmacyDashboardData | null
 }
 
 export async function GET(request: Request) {
-  const pharmacyId = new URL(request.url).searchParams.get("pharmacyId")?.trim().toUpperCase() ?? "";
+  let pharmacyId = new URL(request.url).searchParams.get("pharmacyId")?.trim().toUpperCase() ?? "";
+  if (isAccountAuthConfigured()) {
+    const user = await currentAuthUser();
+    if (!user) return errorResponse("AUTH_REQUIRED", 401);
+    const membership = (await currentMemberships(user.id)).find((candidate) => candidate.role === "PHARMACY_STAFF" && candidate.pharmacy_id);
+    if (!membership?.pharmacy_id) return errorResponse("PHARMACY_ACCESS_DENIED", 403);
+    pharmacyId = membership.pharmacy_id;
+  }
   if (!getActivePharmacy(pharmacyId)) return errorResponse("PHARMACY_NOT_FOUND", 404);
   if (!isReferralDatabaseConfigured()) return errorResponse("PHARMACY_BACKEND_NOT_CONFIGURED", 503);
 
