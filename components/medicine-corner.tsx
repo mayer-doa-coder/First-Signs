@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable @next/next/no-img-element -- DailyMed provides runtime product-label image URLs that cannot be safely preconfigured for Next image optimization. */
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BilingualText, useLanguage, type Copy } from "@/components/language";
 import { Icon } from "@/components/icons";
 import { ClayCard, PageShell, SectionHeading, StatusPill } from "@/components/ui";
@@ -28,24 +28,42 @@ function VerifiedProductPhotos({ medicine }: { medicine: Medicine }) {
   const [failed, setFailed] = useState(false);
   const [image, setImage] = useState(0);
   const [imageUnavailable, setImageUnavailable] = useState(false);
+  const root = useRef<HTMLDivElement | null>(null);
+  const loaded = useRef(false);
+  const loadingRef = useRef(false);
   const product = products?.[selected];
 
-  async function load() {
-    if (loading || products) return;
-    setLoading(true); setFailed(false);
+  const load = useCallback(async () => {
+    if (loadingRef.current || loaded.current) return;
+    loadingRef.current = true; setLoading(true); setFailed(false);
     try {
       const response = await fetch(`/api/medicines/products?medicineId=${encodeURIComponent(medicine.id)}`, { cache: "force-cache" });
       const data = await response.json();
       if (!response.ok || !Array.isArray(data.products)) throw new Error("DailyMed response was invalid");
       setProducts(data.products); setSelected(0); setImage(0); setImageUnavailable(false);
-    } catch { setFailed(true); } finally { setLoading(false); }
-  }
+      loaded.current = true;
+    } catch { setFailed(true); } finally { loadingRef.current = false; setLoading(false); }
+  }, [medicine.id]);
 
-  return <div className="verified-products">
-    <button type="button" className="button button-secondary medicine-photo-button" onClick={() => void load()} disabled={loading}>
-      <Icon name="document" /><BilingualText copy={loading ? { bn: "যাচাইকৃত ছবি খোঁজা হচ্ছে…", en: "Finding verified photos…" } : { bn: "যাচাইকৃত পণ্যের ছবি", en: "Verified product photos" }} />
-    </button>
-    {failed && <p className="medicine-photo-notice" role="status"><BilingualText copy={{ bn: "এখন DailyMed থেকে ছবি পাওয়া যাচ্ছে না। পরে আবার চেষ্টা করুন।", en: "DailyMed photos are unavailable right now. Try again later." }} /></p>}
+  useEffect(() => {
+    const node = root.current;
+    if (!node) return;
+    const Observer = window.IntersectionObserver;
+    if (!Observer) {
+      const timer = window.setTimeout(() => void load(), 0);
+      return () => window.clearTimeout(timer);
+    }
+    const observer = new Observer((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) { void load(); observer.disconnect(); }
+    }, { rootMargin: "180px" });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [load]);
+
+  return <div className="verified-products" ref={root}>
+    <p className="medicine-photo-title"><Icon name="document" /><BilingualText copy={{ bn: "যাচাইকৃত পণ্যের ছবি", en: "Verified product photo" }} /></p>
+    {loading && <p className="medicine-photo-loading" role="status"><BilingualText copy={{ bn: "DailyMed থেকে ছবি আনা হচ্ছে…", en: "Loading the DailyMed photo…" }} /></p>}
+    {failed && <p className="medicine-photo-notice" role="status"><BilingualText copy={{ bn: "এখন DailyMed থেকে ছবি পাওয়া যাচ্ছে না।", en: "A DailyMed photo is unavailable right now." }} /> <button type="button" onClick={() => { loaded.current = false; void load(); }}><BilingualText copy={{ bn: "আবার চেষ্টা করুন", en: "Try again" }} /></button></p>}
     {products && products.length === 0 && <p className="medicine-photo-notice" role="status"><BilingualText copy={{ bn: "এই জেনেরিকের জন্য DailyMed-এ যাচাইকৃত পণ্যের ছবি পাওয়া যায়নি।", en: "No verified product photo is available from DailyMed for this generic." }} /></p>}
     {product && <div className="verified-product-result">
       <p className="verified-product-disclaimer"><BilingualText copy={{ bn: "DailyMed-এর যুক্তরাষ্ট্রের লেবেল পণ্য। বাংলাদেশের প্যাকেটের সঙ্গে না-ও মিলতে পারে—নাম, শক্তি, ধরন ও প্রস্তুতকারক মিলিয়ে নিন।", en: "A U.S. DailyMed label product. It may not match Bangladesh packaging—confirm the name, strength, form, and manufacturer." }} /></p>

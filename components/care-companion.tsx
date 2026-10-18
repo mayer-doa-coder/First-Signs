@@ -187,11 +187,11 @@ function CareLookup({
     <PageShell
       eyebrow={{ bn: "আমার সেবা", en: "My Care" }}
       title={notFound
-        ? { bn: "এই ডেমো সেবার তথ্য পাওয়া যায়নি", en: "This demo care record was not found" }
+        ? { bn: "এই সেবার তথ্য পাওয়া যায়নি", en: "This care record was not found" }
         : { bn: "আপনার সেবার তথ্য খুলুন", en: "Open your care information" }}
       description={{
-        bn: "স্ক্রিনিং শেষে পাওয়া ডেমো রোগী আইডি দিয়ে সংরক্ষিত সেবার অবস্থা খুলুন। এই ডিভাইসে আগে নম্বর রাখলে সেটিও ব্যবহার করতে পারেন।",
-        en: "Use the demo patient ID from the end of screening to open the persisted care status. You can also use a phone number previously saved on this device.",
+        bn: "স্ক্রিনিং শেষে পাওয়া সেবা আইডি দিয়ে সংরক্ষিত সেবার অবস্থা খুলুন। এই ডিভাইসে আগে নম্বর রাখলে সেটিও ব্যবহার করতে পারেন।",
+        en: "Use the care ID from the end of screening to open the persisted care status. You can also use a phone number previously saved on this device.",
       }}
       icon="care"
     >
@@ -199,7 +199,7 @@ function CareLookup({
       <ClayCard className="care-lookup-card">
         <form className="care-lookup-form" onSubmit={findCare}>
           <label htmlFor="care-lookup-value">
-            <BilingualText copy={{ bn: "ডেমো রোগী আইডি বা মোবাইল নম্বর", en: "Demo patient ID or mobile number" }} />
+            <BilingualText copy={{ bn: "সেবা আইডি বা মোবাইল নম্বর", en: "Care ID or mobile number" }} />
           </label>
           <input
             id="care-lookup-value"
@@ -214,7 +214,7 @@ function CareLookup({
               setLookupError(false);
               setLookupUnavailable(false);
             }}
-            placeholder="JVH-DEMO-XXXXXXXX"
+            placeholder="FS-CARE-XXXXXXXX"
             required
           />
           {lookupError && (
@@ -479,8 +479,8 @@ export function CareCompanion({
     }
     if (!currentRecord.screeningId || !currentRecord.symptomAnswers) {
       setFeedback({
-        bn: "এই পুরোনো ডেমো স্ক্রিনিংয়ে রেফারেল তৈরির জন্য প্রয়োজনীয় সম্পূর্ণ তথ্য নেই। নতুন করে স্ক্রিনিং সম্পন্ন করুন।",
-        en: "This older demo screening does not contain all data required to create a referral. Please complete a new screening.",
+        bn: "এই পুরোনো স্ক্রিনিংয়ে রেফারেল তৈরির জন্য প্রয়োজনীয় সম্পূর্ণ তথ্য নেই। নতুন করে স্ক্রিনিং সম্পন্ন করুন।",
+        en: "This older screening does not contain all data required to create a referral. Please complete a new screening.",
       });
       return;
     }
@@ -543,8 +543,8 @@ export function CareCompanion({
         },
         simulated
           ? {
-              bn: "ডেমোর ফলো-আপ শুরু হয়েছে। রেফারেলটি FOLLOW_UP হয়েছে। এখন যেতে না পারার কারণ জানান।",
-              en: "Demo follow-up has started. The referral is now FOLLOW_UP. Tell us what prevented the visit.",
+              bn: "ফলো-আপ শুরু হয়েছে। রেফারেলটি FOLLOW_UP হয়েছে। এখন যেতে না পারার কারণ জানান।",
+              en: "Follow-up has started. The referral is now FOLLOW_UP. Tell us what prevented the visit.",
             }
           : {
               bn: "আপনি যেতে পারেননি—এটি রাখা হয়েছে। এখন যেতে না পারার কারণ জানান।",
@@ -727,8 +727,8 @@ export function CareCompanion({
 
     if (!trimmedPhone) {
       updateCare({ phone: undefined }, {
-        bn: "মোবাইল নম্বর সরিয়ে ফেলা হয়েছে। ডেমো রোগী আইডি দিয়ে সেবার তথ্য খোলা যাবে।",
-        en: "The mobile number was removed. You can still open care with the demo patient ID.",
+        bn: "মোবাইল নম্বর সরিয়ে ফেলা হয়েছে। সেবা আইডি দিয়ে সেবার তথ্য খোলা যাবে।",
+        en: "The mobile number was removed. You can still open care with the care ID.",
       });
       setPhoneError(false);
       return;
@@ -771,7 +771,7 @@ export function CareCompanion({
 
       <ClayCard className="care-identity-card" as="section">
         <div className="care-identity-main">
-          <span className="mini-label"><BilingualText copy={{ bn: "ডেমো রোগী আইডি", en: "Demo patient ID" }} /></span>
+          <span className="mini-label"><BilingualText copy={{ bn: "সেবা আইডি", en: "Care ID" }} /></span>
           <code lang="en" data-patient-id>{currentRecord.patientId}</code>
         </div>
         <div className="care-identity-side">
@@ -1108,7 +1108,7 @@ export function CareCompanion({
               data-action="simulate-24-hours"
             >
               <Icon name="clock" />
-              <BilingualText copy={{ bn: "ডেমো ফলো-আপ শুরু করুন", en: "Start demo follow-up" }} />
+              <BilingualText copy={{ bn: "ফলো-আপ শুরু করুন", en: "Start follow-up" }} />
               <small><BilingualText copy={{ bn: "শুধু উপস্থাপনার জন্য", en: "Presentation only" }} /></small>
             </button>
           )}
@@ -1241,8 +1241,8 @@ export function CareCompanion({
           <h2><BilingualText copy={{ bn: "পরে আবার সেবার তথ্য খুলুন", en: "Reopen your care later" }} /></h2>
           <p>
             <BilingualText copy={currentRecord.source === "self"
-              ? { bn: "ডেমো রোগী আইডি রেখে দিন। চাইলে একটি মোবাইল নম্বরও রাখতে পারেন, তখন নম্বর দিয়েই এই ব্রাউজারে সেবার তথ্য খোলা যাবে।", en: "Keep your demo patient ID. You may also save a mobile number, and then reopen care with that number in this browser." }
-              : { bn: "এই ফার্মেসি সেশনে সেবার সব তথ্য দেখা যাচ্ছে। মোবাইল নম্বর থাকলে সেশন চলাকালে নম্বর দিয়েও তথ্যটি আবার খোলা যাবে। ডেমো রোগী আইডিটি লিখে রাখুন।", en: "All care information is available during this pharmacy session. With a mobile number you can reopen it during the session; write down the demo patient ID as well." }} />
+              ? { bn: "সেবা আইডি রেখে দিন। চাইলে একটি মোবাইল নম্বরও রাখতে পারেন, তখন নম্বর দিয়েই এই ব্রাউজারে সেবার তথ্য খোলা যাবে।", en: "Keep your care ID. You may also save a mobile number, and then reopen care with that number in this browser." }
+              : { bn: "এই ফার্মেসি সেশনে সেবার সব তথ্য দেখা যাচ্ছে। মোবাইল নম্বর থাকলে সেশন চলাকালে নম্বর দিয়েও তথ্যটি আবার খোলা যাবে। সেবা আইডিটি লিখে রাখুন।", en: "All care information is available during this pharmacy session. With a mobile number you can reopen it during the session; write down the care ID as well." }} />
           </p>
           <form className="care-phone-form" onSubmit={savePhone}>
             <label htmlFor="care-phone"><BilingualText copy={{ bn: "মোবাইল নম্বর (ঐচ্ছিক)", en: "Mobile number (optional)" }} /></label>
@@ -1285,7 +1285,7 @@ export function CareCompanion({
           <h2><BilingualText copy={currentRecord.source === "self" ? { bn: "এই ব্রাউজারের তথ্য", en: "Information in this browser" } : { bn: "শেয়ার করা ডিভাইসের সেশন", en: "Shared-device session" } } /></h2>
           <p>
             <BilingualText copy={currentRecord.source === "self"
-              ? { bn: "এই ডিভাইসে রাখা সেবার কপি চাইলে এখনই মুছে ফেলতে পারেন। সংরক্ষিত সর্বশেষ অবস্থা ডেমো রোগী আইডি দিয়ে আবার খোলা যাবে।", en: "You can remove the care copy kept on this device. The latest persisted status can still be reopened with the demo patient ID." }
+              ? { bn: "এই ডিভাইসে রাখা সেবার কপি চাইলে এখনই মুছে ফেলতে পারেন। সংরক্ষিত সর্বশেষ অবস্থা সেবা আইডি দিয়ে আবার খোলা যাবে।", en: "You can remove the care copy kept on this device. The latest persisted status can still be reopened with the care ID." }
               : { bn: "কাজ শেষ হলে ফার্মেসির ডিভাইস থেকে ব্রাউজার কপিটি মুছে দিন, যাতে পরের ব্যক্তি তা দেখতে না পান।", en: "When finished, clear the browser copy from the pharmacy device so the next person cannot see it." }} />
           </p>
           <button className="button button-quiet" type="button" onClick={clearCareSession} data-action="clear-care">

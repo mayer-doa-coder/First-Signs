@@ -13,7 +13,7 @@ Run `npm run check:config` before starting the app or deploying it. It prints on
 - Required core persistence: `SUPABASE_URL` and either `SUPABASE_SECRET_KEY` or `SUPABASE_SERVICE_ROLE_KEY`.
 - Recommended for stable QR links: `NEXT_PUBLIC_APP_URL` (or server-only `APP_URL`) with the final public HTTPS origin.
 - Feature-specific: `TB_CENTRE_STAFF_PIN` enables demo centre verification; `GEMINI_API_KEY` enables AI explanations; both `HEAR_SERVICE_URL` and `HEAR_SERVICE_TOKEN` enable real acoustic processing.
-- Messaging is disabled until its WhatsApp or Telegram variables and a public HTTPS callback URL are configured.
+- Telegram messaging is disabled until its variables and a public HTTPS callback URL are configured.
 
 Copy `.env.example` to `.env.local` for local development, replace placeholders, and restart Next.js after every environment-variable change. Keep `.env.local` out of Git. In hosted environments, add the same server-only values through the host's secret/configuration panel, then rebuild if `NEXT_PUBLIC_APP_URL` changes because Next.js embeds `NEXT_PUBLIC_` values into the browser bundle at build time.
 
@@ -1000,40 +1000,30 @@ Implementation boundary:
 
 ---
 
-# Part 16 — Connect WhatsApp and Telegram
+# Part 16 — Connect Telegram
 
-## Step 57 — Connect WhatsApp only after web flow works
+## Step 57 — Create the Telegram entry channel
 
-Open:
+Create a Telegram bot through `@BotFather` after the web flow works.
 
-https://whatsappbusiness.com/developers/developer-hub/
+## Step 58 — Use Telegram as an optional entry channel
 
-Create a test setup.
-
-Create a Telegram test bot through `@BotFather` as the second messaging channel.
-
-## Step 58 — Use WhatsApp as another entry channel
-
-A person should be able to start from home using WhatsApp.
-
-A pharmacy QR can also open the same WhatsApp flow later.
-
-WhatsApp and Telegram should support both self-use and pharmacy-assisted entry. Use provider deep-link payloads that carry only `SELF` or a validated active pharmacy ID. An invalid or inactive pharmacy ID must be rejected, never silently changed to self-use.
+A person should be able to start from home using Telegram. A pharmacy QR can also open the same Telegram flow. Use deep-link payloads that carry only `SELF` or a validated active pharmacy ID. An invalid or inactive pharmacy ID must be rejected, never silently changed to self-use.
 
 ## Step 59 — Use the same backend flow
 
-WhatsApp and web must use:
+Telegram and web must use:
 
 - the same screening rules,
 - the same patient data,
 - the same referral system,
 - the same follow-up system.
 
-Reuse the same deterministic safety function and the same Supabase screening, referral, care, and follow-up RPCs for web, WhatsApp, and Telegram. Persist private conversation state by an HMAC-SHA256 channel key; do not persist raw phone numbers, Telegram chat IDs, or inbound message text.
+Reuse the same deterministic safety function and the same Supabase screening, referral, care, and follow-up RPCs for web and Telegram. Persist private conversation state by an HMAC-SHA256 channel key; do not persist raw Telegram chat IDs or inbound message text.
 
 ## Step 60 — Support voice messages
 
-When a WhatsApp or Telegram voice message arrives:
+When a Telegram voice message arrives:
 
 1. receive the audio,
 2. send it to the same audio function,
@@ -1044,11 +1034,10 @@ Validate the provider file type, size, and audio-container signature; calculate 
 
 ## Step 61 — Keep the website as backup
 
-Keep the website as a reliable backup if WhatsApp or Telegram is unavailable during the demo.
+Keep the website as a reliable backup if Telegram is unavailable.
 
 Implementation boundary:
 
-- authenticate WhatsApp POST requests with `X-Hub-Signature-256` and the server-only app secret,
 - authenticate Telegram POST requests with `X-Telegram-Bot-Api-Secret-Token`,
 - keep all provider tokens and webhook secrets server-only,
 - reject non-private Telegram chats and malformed provider/user IDs,
@@ -1130,7 +1119,7 @@ If cough processing fails:
 
 The care-navigation system must still work.
 
-Use this fallback only for an unavailable or failed acoustic-processing request. A valid negative or inconclusive acoustic result is not a processing failure. The same boundary applies to web, WhatsApp, and Telegram audio.
+Use this fallback only for an unavailable or failed acoustic-processing request. A valid negative or inconclusive acoustic result is not a processing failure. The same boundary applies to web and Telegram audio.
 
 ---
 
@@ -1331,7 +1320,7 @@ This section is only a recommended order. You can move between items as needed w
 18. simple AI companion
 19. English-first visual polish and language-quality review (bilingual support is already core)
 20. community feedback page
-21. WhatsApp connection
+21. Telegram connection
 
 ## Add Later — Optional
 
@@ -1393,12 +1382,6 @@ It is not a TB diagnosis and not an outbreak confirmation.
 - HeAR start guide: https://developers.google.com/health-ai-developer-foundations/hear/get-started
 - HeAR GitHub: https://github.com/Google-Health/hear
 - HeAR PyTorch: https://huggingface.co/google/hear-pytorch
-
-## WhatsApp
-
-- Developer Hub: https://whatsappbusiness.com/developers/developer-hub/
-- Business Platform: https://whatsappbusiness.com/products/business-platform/
-- Pricing: https://whatsappbusiness.com/products/platform-pricing/
 
 ## Telegram
 

@@ -38,7 +38,7 @@ try {
   await page.locator("#medicine-query").fill("amoxicillin");
   const medicineCard = page.locator(".medicine-card").filter({ has: page.getByRole("heading", { name: "Amoxicillin", exact: true }) });
   if ((await medicineCard.count()) !== 1) throw new Error("Medicine search did not include the exact amoxicillin result");
-  await medicineCard.getByRole("button", { name: "Verified product photos" }).click();
+  await medicineCard.scrollIntoViewIfNeeded();
   await page.getByText(/U\.S\. DailyMed label product/i).waitFor();
   if (!await page.locator(".verified-product-image").isVisible()) throw new Error("Verified DailyMed image was not rendered");
   if (!await page.getByText(/does not confirm Bangladesh availability/i).isVisible()) throw new Error("Bangladesh availability warning is missing");

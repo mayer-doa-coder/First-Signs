@@ -150,6 +150,7 @@ try {
     "test:integration",
     "test:ai-browser",
     "test:ai-live",
+    "test:account-browser",
     "test:assistant-browser",
     "test:medicines-browser",
     "test:hear-browser"

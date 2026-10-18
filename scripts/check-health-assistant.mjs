@@ -19,6 +19,11 @@ try {
       });
       return;
     }
+    const body = route.request().postData() ?? "";
+    if (body.includes('name="action"') && body.includes("TRANSCRIBE")) {
+      await route.fulfill({ contentType: "application/json", body: JSON.stringify({ transcript: "A cough has lasted two weeks." }) });
+      return;
+    }
     await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({
@@ -33,12 +38,31 @@ try {
   if (response?.status() !== 200) throw new Error(`/assistant returned HTTP ${response?.status()}`);
   if (!await page.getByText("TB and health companion", { exact: true }).isVisible()) throw new Error("English assistant heading is missing");
 
-  await page.locator("#health-question").fill("When should a cough receive formal evaluation?");
-  await page.getByRole("button", { name: "Ask" }).click();
+  await page.locator(".assistant-composer textarea").fill("When should a cough receive formal evaluation?");
+  await page.getByRole("button", { name: "Send" }).click();
   await page.getByText(/two weeks or more/i).waitFor();
   if (!await page.getByRole("link", { name: "WHO tuberculosis fact sheet" }).isVisible()) throw new Error("Assistant citation is missing");
-  if (!await page.getByRole("button", { name: "Record voice" }).isVisible()) throw new Error("Voice action is missing");
-  if (!await page.locator('input[type="file"][accept*="image/jpeg"][accept*="audio/wav"]').isVisible()) throw new Error("Assistant media input is missing");
+  if (!await page.getByRole("button", { name: "Voice" }).isVisible()) throw new Error("Voice action is missing");
+  if (!await page.getByRole("button", { name: "Attach" }).isVisible()) throw new Error("Assistant attachment control is missing");
+  await page.locator(".assistant-file-input").setInputFiles({
+    name: "context.png",
+    mimeType: "image/png",
+    buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=", "base64"),
+  });
+  if (!await page.locator(".assistant-attachment img").isVisible()) throw new Error("Image attachment preview is missing");
+  await page.locator(".assistant-attachment button").click();
+  if (await page.locator(".assistant-attachment").count()) throw new Error("Image attachment removal did not work");
+  await page.locator(".assistant-file-input").setInputFiles({
+    name: "question.webm",
+    mimeType: "audio/webm",
+    buffer: Buffer.from("524946460000000057415645666d7420", "hex"),
+  });
+  if (!await page.locator(".assistant-attachment audio").isVisible()) throw new Error("Audio attachment playback is missing");
+  await page.getByRole("button", { name: "To text" }).click();
+  await page.waitForFunction(() => document.querySelector(".assistant-composer textarea")?.value === "A cough has lasted two weeks.");
+  if (await page.locator(".assistant-composer textarea").inputValue() !== "A cough has lasted two weeks.") throw new Error("Voice-to-text did not populate the editable composer");
+  await page.locator(".assistant-launch-button").click();
+  if (!await page.locator(".assistant-overlay .assistant-chat").isVisible()) throw new Error("Global assistant launcher did not open");
 
   const noOverflow = async (label) => {
     const size = await page.evaluate(() => ({

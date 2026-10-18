@@ -82,18 +82,25 @@ export function referralLinkFor(accessToken: string) {
 }
 
 export async function requestReferral(input: CreateReferralInput): Promise<ReferralView> {
-  const response = await fetch("/api/referrals", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(input),
-  });
-
-  const body = await response.json().catch(() => null) as { referral?: ReferralView; error?: string } | null;
-  if (!response.ok || !body?.referral) {
-    throw new Error(body?.error ?? "REFERRAL_CREATE_FAILED");
+  let lastError = "REFERRAL_CREATE_FAILED";
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const response = await fetch("/api/referrals", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      const body = await response.json().catch(() => null) as { referral?: ReferralView; error?: string } | null;
+      if (response.ok && body?.referral) return body.referral;
+      lastError = body?.error ?? lastError;
+      if (response.status < 500) break;
+    } catch {
+      // Referral creation is idempotent by screening ID, so a single retry
+      // cannot create a duplicate if the first response was lost in transit.
+    }
+    if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 350));
   }
-
-  return body.referral;
+  throw new Error(lastError);
 }
 
 export async function fetchReferral(accessToken: string): Promise<ReferralView> {

@@ -69,7 +69,7 @@ export function PharmacyDashboard({ initialPharmacyId }: { initialPharmacyId: st
     <div className="pharmacy-dashboard-live" data-pharmacy-dashboard={pharmacyId}>
       <ClayCard className="pharmacy-dashboard-toolbar" as="section">
         <div>
-          <label htmlFor="pharmacy-dashboard-select"><BilingualText copy={{ bn: "ডেমো ফার্মেসি", en: "Demo pharmacy" }} /></label>
+          <label htmlFor="pharmacy-dashboard-select"><BilingualText copy={{ bn: "ফার্মেসি", en: "Pharmacy" }} /></label>
           <select id="pharmacy-dashboard-select" value={pharmacyId} onChange={(event) => choosePharmacy(event.target.value)}>
             {demoPharmacies.map((pharmacy) => (
               <option key={pharmacy.id} value={pharmacy.id} lang={language}>
@@ -151,7 +151,7 @@ export function PharmacyDashboard({ initialPharmacyId }: { initialPharmacyId: st
             </div>
             <p><BilingualText copy={{ bn: "একই রোগীর একই ধরনের পুরস্কার ৩০ দিনের মধ্যে আবার দেওয়া হয় না। স্বাস্থ্যসেবা বা রেফারেল বন্ধ হয় না। একই অডিওর সতর্কতা শুধু পর্যালোচনার সংকেত—প্রতারণার প্রমাণ নয়।", en: "The same reward type is not issued again for one patient within 30 days. Health service and referral access continue. An identical-audio warning is a review signal only, not proof of fraud." }} /></p>
             {dashboard.duplicateRewardWarnings > 0 && <p className="fraud-rule-message" role="status"><BilingualText copy={{ bn: "পুরস্কারের যোগ্য নয় — সাম্প্রতিক স্ক্রিনিং ইতিমধ্যে আছে।", en: "Reward not eligible — recent screening already exists." }} /></p>}
-            <small><BilingualText copy={{ bn: "ডেমো ভলিউম নিয়ম: চলমান ২৪ ঘণ্টায় ১০টি রেফারেল হলে নতুন পুরস্কার পর্যালোচনার জন্য রাখা হয়। আগের পুরস্কার বদলানো হয় না।", en: "Demo volume rule: at 10 referrals in a rolling 24 hours, new rewards are held for review. Earlier rewards are not changed." }} /></small>
+            <small><BilingualText copy={{ bn: "ভলিউম নিয়ম: চলমান ২৪ ঘণ্টায় ১০টি রেফারেল হলে নতুন পুরস্কার পর্যালোচনার জন্য রাখা হয়। আগের পুরস্কার বদলানো হয় না।", en: "Volume rule: at 10 referrals in a rolling 24 hours, new rewards are held for review. Earlier rewards are not changed." }} /></small>
           </ClayCard>
 
           <div className="button-row pharmacy-dashboard-actions">

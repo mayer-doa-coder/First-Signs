@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { HTMLAttributes, ReactNode } from "react";
 import { BilingualText, type Copy } from "@/components/language";
 import { Icon, type IconName } from "@/components/icons";
@@ -18,16 +19,29 @@ export function PageShell({
   actions?: ReactNode;
   icon?: IconName;
 }) {
+  const heroTone = `hero-${icon}`;
+  const heroArtwork: Partial<Record<IconName, { src: string; width: number; height: number }>> = {
+    screen: { src: "/healthcare/cough-care-illustration.png", width: 959, height: 766 },
+    care: { src: "/healthcare/respiratory-consultation.png", width: 960, height: 838 },
+    document: { src: "/healthcare/lungs-illustration.png", width: 2096, height: 1541 },
+    location: { src: "/healthcare/clinician-care-illustration.png", width: 990, height: 898 },
+  };
+  const artwork = heroArtwork[icon];
   return (
     <main className="page-shell">
-      <section className="page-hero container" aria-labelledby="page-title">
+      <section className={`page-hero ${heroTone} container`} aria-labelledby="page-title">
         <div className="page-hero-copy">
           <div className="eyebrow"><Icon name={icon} /><BilingualText copy={eyebrow} /></div>
           <h1 id="page-title"><BilingualText copy={title} /></h1>
           <p className="lede"><BilingualText copy={description} /></p>
           {actions && <div className="button-row">{actions}</div>}
         </div>
-        <div className="hero-symbol" aria-hidden="true"><Icon name={icon} /></div>
+        <div className={`hero-visual${artwork ? " hero-visual-artwork" : ""}`} aria-hidden="true">
+          <span className="hero-orbit hero-orbit-one" />
+          <span className="hero-orbit hero-orbit-two" />
+          {artwork ? <Image className="hero-artwork" src={artwork.src} width={artwork.width} height={artwork.height} alt="" /> : <span className="hero-visual-icon"><Icon name={icon} /></span>}
+          <span className="hero-visual-line" />
+        </div>
       </section>
       <div className="container page-content">{children}</div>
     </main>
@@ -65,12 +79,10 @@ export function ActionLink({ href, label, variant = "primary", icon = "arrow" }:
 }
 
 export function DemoNotice({ compact = false }: { compact?: boolean }) {
-  return (
-    <div className={`demo-notice ${compact ? "demo-notice-compact" : ""}`} role="note">
-      <Icon name="info" />
-      <p><strong><BilingualText copy={{ bn: "ডেমো কনটেন্ট", en: "Demo content" }} /></strong>{" "}<BilingualText copy={{ bn: "এই পাতার তথ্য এখনো কোনো বাস্তব রোগী বা সেবার সঙ্গে যুক্ত নয়।", en: "This page is not yet connected to any real patient or service." }} /></p>
-    </div>
-  );
+  // Kept as a no-op while older pages are migrated away from this former banner.
+  // A patient-facing page must never imply that its care pathway is fictitious.
+  void compact;
+  return null;
 }
 
 export function StatusPill({ label, tone = "neutral", icon = "info" }: { label: Copy; tone?: "neutral" | "success" | "warning" | "risk"; icon?: IconName }) {

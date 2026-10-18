@@ -24,6 +24,7 @@
     "test:ai-browser": "node scripts/check-ai-companion.mjs",
     "test:ai-live": "node scripts/check-ai-companion-live.mjs",
     "test:assistant-browser": "node scripts/check-health-assistant.mjs",
+    "test:account-browser": "node scripts/check-account-browser.mjs",
     "test:medicines": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test scripts/check-medicine-corner.test.mts",
     "test:medicines-browser": "node scripts/check-medicine-corner.mjs",
     "test:messaging": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test scripts/check-messaging-channels.test.mts",

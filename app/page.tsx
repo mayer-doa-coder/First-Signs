@@ -1,14 +1,15 @@
 import { BilingualText } from "@/components/language";
+import Image from "next/image";
 import { Icon } from "@/components/icons";
 import { PharmacyQrCard } from "@/components/pharmacy-qr-card";
 import { ActionLink, ClayCard, FeatureCard, IconTile, SectionHeading } from "@/components/ui";
 import { defaultDemoPharmacy, demoPharmacies, getPharmacyScreeningPath } from "@/lib/pharmacies";
 import { getPublicAppOrigin } from "@/lib/public-app-origin";
-import { configuredMessagingLinks } from "@/lib/messaging-links";
+import { telegramEntryLink } from "@/lib/messaging-links";
 
 export default async function HomePage() {
   const qrBaseUrl = await getPublicAppOrigin();
-  const selfMessagingLinks = configuredMessagingLinks({ source: "SELF" });
+  const selfTelegramLink = telegramEntryLink(process.env.TELEGRAM_BOT_USERNAME ?? "", { source: "SELF" });
 
   return (
     <main className="home-page">
@@ -24,15 +25,21 @@ export default async function HomePage() {
           <div className="safety-line"><Icon name="info" /><p><strong><BilingualText copy={{ bn: "এটি যক্ষ্মা রোগ নির্ণয় করে না।", en: "This does not diagnose TB." }} /></strong>{" "}<BilingualText copy={{ bn: "প্রস্তাব করা হলে আনুষ্ঠানিক পরীক্ষা প্রয়োজন।", en: "Formal evaluation is required when recommended." }} /></p></div>
         </div>
         <ClayCard className="journey-card">
-          <div className="journey-orbit" aria-hidden="true">
-            <span><Icon name="home" /></span><span><Icon name="screen" /></span><span><Icon name="building" /></span>
-            <div className="journey-heart"><Icon name="care" /></div>
+          <div className="journey-artwork" aria-hidden="true">
+            <Image src="/healthcare/cough-care-illustration.png" width={959} height={766} alt="" priority />
+            <span className="journey-artwork-badge"><Icon name="shield" /></span>
           </div>
-          <div>
+          <div className="journey-card-heading">
             <span className="mini-label"><BilingualText copy={{ bn: "সেবার পথ", en: "Care pathway" }} /></span>
-            <h2><BilingualText copy={{ bn: "উদ্বেগ থেকে আনুষ্ঠানিক সেবা পর্যন্ত", en: "From concern to formal care" }} /></h2>
-            <p><BilingualText copy={{ bn: "নিজের ফোন বা ফার্মেসির সহায়তায় একই নিরাপদ পথ।", en: "The same safe pathway from your phone or with pharmacy assistance." }} /></p>
+            <h2><BilingualText copy={{ bn: "উদ্বেগ থেকে পরবর্তী পদক্ষেপে", en: "From concern to your next step" }} /></h2>
+            <p><BilingualText copy={{ bn: "নিজের ফোন বা ফার্মেসির সহায়তায় একটি সহজ, নিরাপদ পথ বেছে নিন।", en: "Choose one simple, safe path from your phone or with pharmacy support." }} /></p>
           </div>
+          <ol className="journey-step-list">
+            <li><span><Icon name="screen" /></span><div><strong><BilingualText copy={{ bn: "১. সংক্ষিপ্ত যাচাই", en: "1. Short check" }} /></strong><small><BilingualText copy={{ bn: "কয়েকটি প্রয়োজনীয় প্রশ্ন", en: "A few useful questions" }} /></small></div></li>
+            <li><span><Icon name="location" /></span><div><strong><BilingualText copy={{ bn: "২. সেবা খুঁজুন", en: "2. Find care" }} /></strong><small><BilingualText copy={{ bn: "প্রয়োজনে কাছের কেন্দ্র", en: "A nearby centre if needed" }} /></small></div></li>
+            <li><span><Icon name="care" /></span><div><strong><BilingualText copy={{ bn: "৩. পরবর্তী কাজ", en: "3. Next action" }} /></strong><small><BilingualText copy={{ bn: "নিজের গতিতে এগোন", en: "Move forward at your pace" }} /></small></div></li>
+          </ol>
+          <ActionLink href="/screen?source=self" icon="arrow" label={{ bn: "শুরু করুন", en: "Start a check" }} />
         </ClayCard>
       </section>
 
@@ -68,13 +75,11 @@ export default async function HomePage() {
           <IconTile icon="screen" tone="blue" />
           <div>
             <span className="mini-label"><BilingualText copy={{ bn: "আরও দুটি প্রবেশপথ", en: "Two more entry channels" }} /></span>
-            <h2 id="messaging-entry-title"><BilingualText copy={{ bn: "WhatsApp বা Telegram থেকে বাড়িতে শুরু করুন", en: "Start from home in WhatsApp or Telegram" }} /></h2>
+            <h2 id="messaging-entry-title"><BilingualText copy={{ bn: "Telegram থেকে বাড়িতে শুরু করুন", en: "Start from home in Telegram" }} /></h2>
             <p><BilingualText copy={{ bn: "একই সম্মতি, নির্দিষ্ট নিরাপত্তা নিয়ম, স্ক্রিনিং, রেফারেল ও ফলো-আপ ব্যবহার হবে। মেসেজিং সেবা না চললে ওয়েবসাইট ব্যবহার করুন।", en: "The same consent, fixed safety rules, screening, referral, and follow-up are used. Use the website if messaging is unavailable." }} /></p>
           </div>
           <div className="messaging-entry-actions">
-            {selfMessagingLinks.whatsapp && <ActionLink href={selfMessagingLinks.whatsapp} icon="screen" label={{ bn: "WhatsApp-এ শুরু করুন", en: "Start in WhatsApp" }} />}
-            {selfMessagingLinks.telegram && <ActionLink href={selfMessagingLinks.telegram} variant="secondary" icon="screen" label={{ bn: "Telegram-এ শুরু করুন", en: "Start in Telegram" }} />}
-            {!selfMessagingLinks.whatsapp && !selfMessagingLinks.telegram && <ActionLink href="/screen?source=self" icon="home" label={{ bn: "ওয়েবসাইটে শুরু করুন", en: "Start on the website" }} />}
+            {selfTelegramLink ? <ActionLink href={selfTelegramLink} variant="secondary" icon="screen" label={{ bn: "Telegram-এ শুরু করুন", en: "Start in Telegram" }} /> : <ActionLink href="/screen?source=self" icon="home" label={{ bn: "ওয়েবসাইটে শুরু করুন", en: "Start on the website" }} />}
           </div>
         </ClayCard>
       </section>
@@ -92,7 +97,7 @@ export default async function HomePage() {
         <SectionHeading
           id="pharmacy-access-title"
           title={{ bn: "ফার্মেসির QR দিয়ে শুরু করুন", en: "Start with a pharmacy QR" }}
-          description={{ bn: "প্রতিটি QR একটি নির্দিষ্ট ডেমো ফার্মেসির পরিচয় বহন করে।", en: "Each QR carries the identity of one specific demo pharmacy." }}
+          description={{ bn: "প্রতিটি QR একটি নির্দিষ্ট ফার্মেসির পরিচয় বহন করে।", en: "Each QR carries the identity of one specific pharmacy." }}
         />
         <div className="pharmacy-qr-grid">
           {demoPharmacies.map((pharmacy) => (
@@ -100,7 +105,7 @@ export default async function HomePage() {
               key={pharmacy.id}
               pharmacy={pharmacy}
               qrBaseUrl={qrBaseUrl}
-              messagingLinks={configuredMessagingLinks({ source: "PHARMACY", pharmacyId: pharmacy.id })}
+              messagingLinks={{ telegram: telegramEntryLink(process.env.TELEGRAM_BOT_USERNAME ?? "", { source: "PHARMACY", pharmacyId: pharmacy.id }) }}
             />
           ))}
         </div>

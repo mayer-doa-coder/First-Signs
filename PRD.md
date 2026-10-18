@@ -114,7 +114,7 @@ All money shown in the prototype must be clearly marked as **illustrative / simu
 1. Patient visits a pharmacy with a persistent cough or related concern.
 2. Pharmacy shows the First Signs QR code.
 3. Patient scans the QR code.
-4. Patient opens the web chat first. WhatsApp can be connected later.
+4. Patient opens the web chat first. Telegram is an optional secondary entry point.
 5. Patient sees a clear message that this is screening and care navigation, not diagnosis.
 6. Patient gives consent.
 7. Patient answers a small number of TB symptom and risk questions.
@@ -315,15 +315,15 @@ a person.
 - Never present the catalogue as a substitute for urgent care. Keep the fixed
   urgent guidance and all existing TB referral and screening flows unchanged.
 
-### B. WhatsApp and Telegram Connection
+### B. Telegram Connection
 
-Connect the already-working patient flow to WhatsApp and Telegram. Both channels must support self-use and pharmacy-assisted entry while reusing the same consent, fixed clinical safety rules, patient records, screening persistence, referral workflow, and follow-up workflow as the website.
+Connect the already-working patient flow to Telegram. It must support self-use and pharmacy-assisted entry while reusing the same consent, fixed clinical safety rules, patient records, screening persistence, referral workflow, and follow-up workflow as the website.
 
 Messaging voice files must be processed through the shared prototype audio pipeline. Store only the lowercase SHA-256 digest needed for duplicate-file warning; do not retain the audio file. Messaging audio must not diagnose TB or change the deterministic safety outcome.
 
-Provider webhook requests must be authenticated server-side. Store only a one-way channel identifier for conversation continuity; do not store raw WhatsApp phone numbers, Telegram chat IDs, or inbound free text in the messaging-session tables.
+Telegram webhook requests must be authenticated server-side. Store only a one-way channel identifier for conversation continuity; do not store raw Telegram chat IDs or inbound free text in the messaging-session tables.
 
-Do not make the live presentation depend on WhatsApp or Telegram. Keep the web version as a backup.
+Do not make the live presentation depend on Telegram. Keep the web version as a backup.
 
 ### C. Public Launch Page
 
@@ -586,7 +586,7 @@ These are recommendations, not requirements.
 - **Hosting:** Vercel Hobby for the prototype
 - **Map:** MapLibre
 - **AI conversation:** Gemini API free tier or fixed responses if AI is unavailable
-- **Messaging:** WhatsApp Business Platform and Telegram Bot API after the web flow works
+- **Messaging:** Telegram Bot API after the web flow works
 - **Cough model:** Google HeAR only after the main product is stable
 
 ## 19. Useful Online Resources
@@ -618,11 +618,6 @@ These are recommendations, not requirements.
 - TBscreen data and reproducible code: https://zenodo.org/records/10431329
 - CODA TB DREAM Challenge: https://www.synapse.org/TBcough
 - Jaga investigational triage implementation: https://github.com/AMD-Hackathon-ISPM/jaga
-
-### WhatsApp
-- WhatsApp Developer Hub: https://whatsappbusiness.com/developers/developer-hub/
-- WhatsApp Business Platform: https://whatsappbusiness.com/products/business-platform/
-- WhatsApp pricing: https://whatsappbusiness.com/products/platform-pricing/
 
 ### Telegram
 - Telegram Bot API: https://core.telegram.org/bots/api

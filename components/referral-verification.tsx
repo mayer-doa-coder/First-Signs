@@ -258,7 +258,7 @@ export function ReferralVerification() {
     <PageShell
       eyebrow={{ bn: "সেবাকেন্দ্র কর্মক্ষেত্র", en: "TB centre workspace" }}
       title={{ bn: "রেফারেল উপস্থিতি যাচাই", en: "Verify referral attendance" }}
-      description={{ bn: "ডেমো সেবাকেন্দ্র কর্মীরা রেফারেল খুঁজে আনুষ্ঠানিক মূল্যায়ন শুরু হওয়ার তথ্য নিশ্চিত করবেন।", en: "Demo TB centre staff can find a referral and confirm that formal evaluation has started." }}
+      description={{ bn: "সেবাকেন্দ্র কর্মীরা রেফারেল খুঁজে আনুষ্ঠানিক মূল্যায়ন শুরু হওয়ার তথ্য নিশ্চিত করবেন।", en: "TB-centre staff can find a referral and confirm that formal evaluation has started." }}
       icon="building"
     >
       <DemoNotice />
@@ -269,7 +269,7 @@ export function ReferralVerification() {
               <span className="mini-label"><BilingualText copy={{ bn: "কর্মী প্রবেশ", en: "Staff access" }} /></span>
               <h2><BilingualText copy={{ bn: "রেফারেল খুঁজুন", en: "Find a referral" }} /></h2>
             </div>
-            <StatusPill tone="neutral" icon="shield" label={{ bn: "ডেমো", en: "Demo" }} />
+            <StatusPill tone="neutral" icon="shield" label={{ bn: "সীমিত প্রবেশ", en: "Restricted access" }} />
           </div>
           <form className="field-stack" onSubmit={submitManualLookup}>
             <label htmlFor="tb-centre-staff-pin"><BilingualText copy={{ bn: "সেবাকেন্দ্র কর্মীর পিন", en: "TB centre staff PIN" }} /></label>
@@ -293,7 +293,7 @@ export function ReferralVerification() {
                 required
               />
             </div>
-            <p className="helper-text"><BilingualText copy={{ bn: "এই সার্ভার-নিয়ন্ত্রিত ডেমো পিন শুধু যক্ষ্মা সেবাকেন্দ্র কর্মীর জন্য। ফার্মেসি এটি ব্যবহার করবে না।", en: "This server-controlled demo PIN is for TB-centre staff only. Pharmacies must not use it." }} /></p>
+            <p className="helper-text"><BilingualText copy={{ bn: "এই সার্ভার-নিয়ন্ত্রিত পিন শুধু যক্ষ্মা সেবাকেন্দ্র কর্মীর জন্য। ফার্মেসি এটি ব্যবহার করবে না।", en: "This server-controlled PIN is for TB-centre staff only. Pharmacies must not use it." }} /></p>
             <label htmlFor="referral-id"><BilingualText copy={{ bn: "রেফারেল আইডি", en: "Referral ID" }} /></label>
             <div className="input-with-icon">
               <Icon name="search" />

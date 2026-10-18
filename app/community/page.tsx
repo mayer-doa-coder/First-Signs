@@ -7,7 +7,7 @@ export const metadata = { title: "Community / কমিউনিটি" };
 
 export default function CommunityPage() {
   return (
-    <PageShell eyebrow={{ bn: "কমিউনিটি", en: "Community" }} title={{ bn: "মানুষকে যক্ষ্মা সেবায় পৌঁছাতে কী বাধা দেয়?", en: "What keeps people from reaching TB care?" }} description={{ bn: "ব্যক্তিগত স্বাস্থ্যতথ্য না নিয়েই কমিউনিটির অভিজ্ঞতা থেকে সেবার পথটি আরও সহায়ক করা যায়।", en: "Community experience can improve the care pathway without collecting personal health information." }} icon="community" actions={<ActionLink href="/screen?source=self" label={{ bn: "ডেমো শুরু করুন", en: "Start the demo" }} />}>
+    <PageShell eyebrow={{ bn: "কমিউনিটি", en: "Community" }} title={{ bn: "মানুষকে যক্ষ্মা সেবায় পৌঁছাতে কী বাধা দেয়?", en: "What keeps people from reaching TB care?" }} description={{ bn: "ব্যক্তিগত স্বাস্থ্যতথ্য না নিয়েই কমিউনিটির অভিজ্ঞতা থেকে সেবার পথটি আরও সহায়ক করা যায়।", en: "Community experience can improve the care pathway without collecting personal health information." }} icon="community" actions={<ActionLink href="/screen?source=self" label={{ bn: "স্ক্রিনিং শুরু করুন", en: "Start screening" }} />}>
       <div className="community-privacy-note" role="note">
         <Icon name="shield" />
         <p><strong><BilingualText copy={{ bn: "গোপনীয়তা আগে", en: "Privacy first" }} /></strong>{" "}<BilingualText copy={{ bn: "এই পাতায় ব্যক্তিগত স্বাস্থ্যতথ্য বা যক্ষ্মা অবস্থা চাওয়া হয় না।", en: "This page never asks for personal health information or TB status." }} /></p>

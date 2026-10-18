@@ -5,7 +5,7 @@ import { CoughAudioStep, type CoughAudioChoice } from "@/components/cough-audio-
 import { Icon } from "@/components/icons";
 import { BilingualText, type Copy } from "@/components/language";
 import { ActionLink, ClayCard, StatusPill } from "@/components/ui";
-import { careLinkFor, createDemoPatientId, removeCareRecord, saveCareRecord, type CareRecord } from "@/lib/care-session";
+import { careLinkFor, createCarePatientId, removeCareRecord, saveCareRecord, type CareRecord } from "@/lib/care-session";
 import { broadAreas, screeningAreas, type BroadAreaId } from "@/lib/broad-areas";
 import {
   evaluateSafetyRules,
@@ -162,7 +162,7 @@ export function ScreeningFlow({
     event.preventDefault();
     if (!referralChoice || !safetyOutcome || referralPending) return;
 
-    const nextPatientId = patientId ?? createDemoPatientId();
+    const nextPatientId = patientId ?? createCarePatientId();
     const nextScreeningId = createScreeningId();
     const timestamp = new Date().toISOString();
     const recommendedCentre = selectedArea ? getRecommendedCentre(selectedArea) : undefined;
@@ -579,7 +579,7 @@ export function ScreeningFlow({
           <p className="shared-device-privacy"><BilingualText copy={{ bn: "এটি শেয়ার করা ফার্মেসি ডিভাইস হলে নিচের বোতাম দিয়ে এই পাতার উত্তর মুছে দিন।", en: "If this is a shared pharmacy device, use the button below to clear the answers from this page." }} /></p>
           {patientId && (
             <div className="patient-id-card">
-              <span><BilingualText copy={{ bn: "ডেমো রোগী আইডি", en: "Demo patient ID" }} /></span>
+              <span><BilingualText copy={{ bn: "সেশন আইডি", en: "Session ID" }} /></span>
               <code lang="en">{patientId}</code>
               <small><BilingualText copy={isSelfUse ? { bn: "এই ব্রাউজারে আমার সেবা আবার খুলতে আইডিটি রাখুন।", en: "Keep this ID to reopen My Care in this browser." } : { bn: "এই ফার্মেসি সেশন চলাকালে সেবার তথ্য খুলতে আইডিটি ব্যবহার করুন।", en: "Use this ID to open the care information during this pharmacy session." }} /></small>
             </div>

@@ -54,12 +54,12 @@ export function isGeminiConfigured() {
 export type HealthAssistantAiResponse = { answerBn: string; answerEn: string };
 export type HealthAssistantAttachment = { mimeType: string; base64: string };
 
-export async function requestGeminiHealthAssistant(prompt: string, attachment?: HealthAssistantAttachment): Promise<HealthAssistantAiResponse> {
+export async function requestGeminiHealthAssistant(prompt: string, attachments: HealthAssistantAttachment[] = []): Promise<HealthAssistantAiResponse> {
   const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) throw new Error("AI_NOT_CONFIGURED");
   const request = async (model: string) => fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
     method: "POST", headers: { "content-type": "application/json", "x-goog-api-key": apiKey }, cache: "no-store", signal: AbortSignal.timeout(GEMINI_TIMEOUT_MS),
-    body: JSON.stringify({ systemInstruction: { parts: [{ text: "You are First Signs, a cautious bilingual TB-first health education companion for Bangladesh. Use only supplied sources and activity context. Never diagnose TB, prescribe, recommend doses, start or stop medicines, calculate probability, or replace urgent instructions. An image or audio clip is supporting context only: do not identify medicine, confirm a condition, or make a personal clinical conclusion from it. If sources or the media are insufficient, say clearly that you do not know. For personal medicine questions, advise a clinician or pharmacist. Do not repeat identifiers. Return concise Bangla and English answers." }] }, contents: [{ role: "user", parts: [{ text: prompt }, ...(attachment ? [{ inlineData: { mimeType: attachment.mimeType, data: attachment.base64 } }] : [])] }], generationConfig: { temperature: 0.05, maxOutputTokens: 700, responseMimeType: "application/json", responseSchema: { type: "object", properties: { answerBn: { type: "string" }, answerEn: { type: "string" } }, required: ["answerBn", "answerEn"] } } }),
+    body: JSON.stringify({ systemInstruction: { parts: [{ text: "You are First Signs, a cautious bilingual TB-first health education companion for Bangladesh. Use only supplied sources and activity context. Never diagnose TB, prescribe, recommend doses, start or stop medicines, calculate probability, or replace urgent instructions. Images and audio are supporting context only: do not identify medicine, confirm a condition, or make a personal clinical conclusion from them. If sources or media are insufficient, say clearly that you do not know. For personal medicine questions, advise a clinician or pharmacist. Do not repeat identifiers. Return concise Bangla and English answers." }] }, contents: [{ role: "user", parts: [{ text: prompt }, ...attachments.map((attachment) => ({ inlineData: { mimeType: attachment.mimeType, data: attachment.base64 } }))] }], generationConfig: { temperature: 0.05, maxOutputTokens: 700, responseMimeType: "application/json", responseSchema: { type: "object", properties: { answerBn: { type: "string" }, answerEn: { type: "string" } }, required: ["answerBn", "answerEn"] } } }),
   });
   for (const model of [configuredModel(), FALLBACK_GEMINI_MODEL]) {
     try {
@@ -69,6 +69,30 @@ export async function requestGeminiHealthAssistant(prompt: string, attachment?: 
     } catch { /* try the safe fallback model */ }
   }
   throw new Error("AI_PROVIDER_FAILED");
+}
+
+export async function requestGeminiTranscription(attachment: HealthAssistantAttachment, language: "bn" | "en") {
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  if (!apiKey) throw new Error("AI_NOT_CONFIGURED");
+  for (const model of [configuredModel(), FALLBACK_GEMINI_MODEL]) {
+    try {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
+        cache: "no-store",
+        signal: AbortSignal.timeout(GEMINI_TIMEOUT_MS),
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: "Transcribe only the audible spoken words. Do not infer, answer, summarize, translate, diagnose, identify a medicine, or add information. If speech is unclear or absent, return exactly: [inaudible]." }] },
+          contents: [{ role: "user", parts: [{ text: language === "bn" ? "এই অডিওর হুবহু লেখা দিন।" : "Provide an exact transcript of this audio." }, { inlineData: { mimeType: attachment.mimeType, data: attachment.base64 } }] }],
+          generationConfig: { temperature: 0, maxOutputTokens: 500 },
+        }),
+      });
+      if (!response.ok) continue;
+      const transcript = responseText(await response.json() as GeminiResponse).replace(/\s+/g, " ").trim();
+      if (transcript && transcript.length <= 600) return transcript;
+    } catch { /* Try the fallback model. */ }
+  }
+  throw new Error("AI_TRANSCRIPTION_FAILED");
 }
 
 function responseText(payload: GeminiResponse) {

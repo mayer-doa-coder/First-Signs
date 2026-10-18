@@ -7,14 +7,14 @@ First Signs is a bilingual, nationwide Bangladesh **screening and care-navigatio
 - English is the default language; Bangla remains available on every user-facing screen.
 - The fixed symptom rule, not AI or cough audio, determines the safety outcome.
 - A person controls consent, answers, whether to create a referral, and whether to continue.
-- Exact home address, patient GPS, raw cough audio, audio embeddings, public patient identity, raw Telegram chat IDs, raw WhatsApp numbers, and inbound free text are not retained in the documented persistence flows.
+- Exact home address, patient GPS, raw cough audio, audio embeddings, public patient identity, raw Telegram chat IDs, and inbound free text are not retained in the documented persistence flows.
 - A pharmacy credit reflects a valid workflow step only. It never reflects a TB diagnosis, positive test, or treatment result.
 - A government red map signal means **high potential-TB screening activity — investigate**. It never means a confirmed outbreak.
 
 ## System map
 
 ```text
-Web / Telegram / WhatsApp
+Web / Telegram
              |
              v
 Consent -> symptom answers -> optional audio -> fixed safety rule
@@ -114,7 +114,7 @@ AI and acoustic processing cannot create, downgrade, or override any of these ou
 4. The app calculates a lowercase SHA-256 hash for duplicate-file review and sends transient bytes to the separate HeAR service when it is available.
 5. Raw audio and the 512-value embedding are not persisted.
 
-### 3.2 Telegram or WhatsApp audio
+### 3.2 Telegram audio
 
 1. The provider sends a voice/audio identifier to the authenticated webhook.
 2. The server accepts private Telegram chats only, safely downloads the transient provider file, and applies the same shared validation and SHA-256 process.
@@ -265,16 +265,9 @@ No self-use pathway creates a pharmacy reward. No workflow reward depends on a p
 6. `/start`, `/restart`, and `START SELF` start/restart self-use. Valid provider deep links can start a validated pharmacy-assisted source.
 7. Unsupported update shapes or group chats receive no patient-flow response.
 
-### 10.2 WhatsApp
+### 10.2 Provider outage or configuration gap
 
-1. Meta first verifies the callback with the configured verify token.
-2. Each POST body is authenticated against `X-Hub-Signature-256` with the server-only app secret.
-3. Valid messages enter the same screening, safety, referral, and follow-up logic as web and Telegram.
-4. Invalid signatures, malformed payloads, or unavailable provider configuration do not enter the patient flow.
-
-### 10.3 Provider outage or configuration gap
-
-- If Telegram or WhatsApp is not configured, has a webhook failure, or is otherwise unavailable, use the web workflow as the patient-facing backup.
+- If Telegram is not configured, has a webhook failure, or is otherwise unavailable, use the web workflow as the patient-facing backup.
 - Provider credentials, webhooks, and secrets remain server-only and are never committed.
 
 ## 11. AI companion workflow
@@ -294,7 +287,7 @@ No self-use pathway creates a pharmacy reward. No workflow reward depends on a p
 | Supabase | Persisted screening, referral, care, aggregate, and workflow state | Surface a safe unavailable state; do not substitute browser-only state as authoritative care status. |
 | HeAR service (optional) | Experimental transient cough-presence analysis | Return symptom-based fallback; screening/referral safety remains available. |
 | Cloudflare tunnel (current laptop-hosted HeAR route) | Temporary HTTPS route from Render to local HeAR | A stopped/restarted tunnel or changed URL makes HeAR unavailable until Render is updated; it must not block care navigation. |
-| Telegram / WhatsApp | Optional entry channels | Keep web entry available. |
+| Telegram | Optional entry channel | Keep web entry available. |
 
 ### 12.2 HeAR tunnel restart procedure
 
@@ -321,7 +314,6 @@ Use these scenarios to demonstrate or regression-test the full product.
 9. **Audio success:** valid voice/audio → valid container/size → optional HeAR signal shown separately → same safety outcome as before audio.
 10. **Audio fallback:** denied microphone, invalid audio, unavailable HeAR service, changed Cloudflare URL, or service timeout → clear fallback → symptom/referral flow continues.
 11. **Telegram:** valid private `/start` → English consent → `BANGLA` switch → screening → voice or `SKIP` → care/referral; group messages and invalid webhook headers are rejected.
-12. **WhatsApp:** verified callback and signed message → same shared patient flow; invalid signature or configuration failure remains outside the workflow.
 13. **Duplicate and fraud cases:** repeat credit inside 30 days, reused audio, reused referral QR, pharmacy volume threshold → appropriate review/hold behaviour while care continues.
 14. **Government privacy:** nationwide divisions render on the map; small counts remain protected; red hotspot is shown only as an investigation signal.
 15. **Community feedback:** one anonymous category per submission → aggregate update; no TB-status, name, phone, or free-text collection.

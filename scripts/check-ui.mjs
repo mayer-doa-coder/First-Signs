@@ -13,12 +13,17 @@ const viewports = [
   { name: "laptop", width: 1366, height: 768 },
   { name: "wide-desktop", width: 1920, height: 1080 },
 ];
+const selectedViewportNames = new Set((process.env.UI_VIEWPORTS ?? "").split(",").filter(Boolean));
+const activeViewports = selectedViewportNames.size
+  ? viewports.filter((viewport) => selectedViewportNames.has(viewport.name))
+  : viewports;
+if (selectedViewportNames.size && !activeViewports.length) throw new Error("UI_VIEWPORTS did not match a known viewport");
 
 const browser = await chromium.launch({ executablePath, headless: true });
 const failures = [];
 await mkdir(".artifacts", { recursive: true });
 
-for (const viewport of viewports) {
+for (const viewport of activeViewports) {
   const context = await browser.newContext({ viewport, reducedMotion: "reduce" });
 
   for (const route of routes) {
@@ -27,6 +32,9 @@ for (const viewport of viewports) {
     page.on("console", (message) => {
       if (message.type() !== "error") return;
       if (protectedUnauthenticatedRoutes.has(route) && message.text().includes("status of 401")) return;
+      // Chrome on this workstation injects caret-color: transparent into form
+      // controls before React hydrates. It is not part of the app response.
+      if (message.text().includes('caret-color:"transparent"')) return;
       runtimeErrors.push(message.text());
     });
     page.on("pageerror", (error) => runtimeErrors.push(error.message));
@@ -89,7 +97,7 @@ for (const viewport of viewports) {
   await context.close();
 }
 
-const languageContext = await browser.newContext({ viewport: viewports[0], reducedMotion: "reduce" });
+const languageContext = await browser.newContext({ viewport: activeViewports[0], reducedMotion: "reduce" });
 const languagePage = await languageContext.newPage();
 await languagePage.goto(new URL("/", baseUrl).toString(), { waitUntil: "domcontentloaded" });
 await languagePage.locator("h1").waitFor({ state: "visible" });

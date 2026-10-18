@@ -29,7 +29,7 @@ export default async function ScreenPage({ searchParams }: { searchParams: Scree
       <PageShell
         eyebrow={{ bn: "প্রবেশের ধরন নির্বাচন করুন", en: "Choose how to enter" }}
         title={{ bn: invalidPharmacy ? "ফার্মেসির QR লিংকটি সঠিক নয়" : "কীভাবে যাচাই করবেন?", en: invalidPharmacy ? "This pharmacy QR link is not valid" : "How would you like to check?" }}
-        description={{ bn: invalidPharmacy ? "এই পরিচয়ে কোনো সক্রিয় ডেমো ফার্মেসি পাওয়া যায়নি। নতুন QR স্ক্যান করুন অথবা নিজে যাচাই শুরু করুন।" : "নিজের ডিভাইস থেকে শুরু করুন অথবা হোম পেজে একটি ফার্মেসির QR বেছে নিন।", en: invalidPharmacy ? "No active demo pharmacy was found for this ID. Scan a current QR or begin a self-use check." : "Start on your own device or choose a pharmacy QR on the home page." }}
+        description={{ bn: invalidPharmacy ? "এই পরিচয়ে কোনো সক্রিয় ফার্মেসি পাওয়া যায়নি। নতুন QR স্ক্যান করুন অথবা নিজে যাচাই শুরু করুন।" : "নিজের ডিভাইস থেকে শুরু করুন অথবা হোম পেজে একটি ফার্মেসির QR বেছে নিন।", en: invalidPharmacy ? "No active pharmacy was found for this ID. Scan a current QR or begin a self-use check." : "Start on your own device or choose a pharmacy QR on the home page." }}
         icon={invalidPharmacy ? "pharmacy" : "screen"}
       >
         <ClayCard className="entry-error" as="section">

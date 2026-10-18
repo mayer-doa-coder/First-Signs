@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { BilingualText, LanguageSwitcher, useLanguage, type Copy } from "@/components/language";
 import { Icon, type IconName } from "@/components/icons";
+import { createBrowserAuthClient } from "@/lib/auth-browser";
 
 const navigation: { href: string; label: Copy; icon: IconName }[] = [
   { href: "/", label: { bn: "হোম", en: "Home" }, icon: "home" },
@@ -12,7 +13,6 @@ const navigation: { href: string; label: Copy; icon: IconName }[] = [
   { href: "/care", label: { bn: "আমার সেবা", en: "My care" }, icon: "care" },
   { href: "/assistant", label: { bn: "সহায়ক", en: "Assistant" }, icon: "care" },
   { href: "/medicines", label: { bn: "ওষুধ", en: "Medicines" }, icon: "pharmacy" },
-  { href: "/account", label: { bn: "অ্যাকাউন্ট", en: "Account" }, icon: "users" },
   { href: "/community", label: { bn: "কমিউনিটি", en: "Community" }, icon: "community" },
 ];
 
@@ -20,6 +20,26 @@ export function SiteHeader() {
   const pathname = usePathname();
   const { language } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [signedIn, setSignedIn] = useState(false);
+
+  useEffect(() => {
+    const client = createBrowserAuthClient();
+    if (!client) return;
+    void client.auth.getUser().then(({ data }) => setSignedIn(Boolean(data.user)));
+    const { data: listener } = client.auth.onAuthStateChange((_event, session) => setSignedIn(Boolean(session?.user)));
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  const accountActions = (
+    <div className="header-account-actions">
+      {signedIn ? (
+        <Link href="/account" className="header-account-link" onClick={() => setMenuOpen(false)}><Icon name="users" /><BilingualText copy={{ bn: "আমার অ্যাকাউন্ট", en: "My account" }} /></Link>
+      ) : <>
+        <Link href="/account?mode=login" className="header-login-link" onClick={() => setMenuOpen(false)}><BilingualText copy={{ bn: "লগ ইন", en: "Log in" }} /></Link>
+        <Link href="/account?mode=signup" className="header-signup-link" onClick={() => setMenuOpen(false)}><BilingualText copy={{ bn: "সাইন আপ", en: "Sign up" }} /></Link>
+      </>}
+    </div>
+  );
 
   return (
     <header className="site-header">
@@ -33,6 +53,7 @@ export function SiteHeader() {
         </Link>
         <div className="header-actions">
           <LanguageSwitcher />
+          <div className="header-account-desktop">{accountActions}</div>
           <button
             className="menu-toggle"
             type="button"
@@ -52,6 +73,7 @@ export function SiteHeader() {
             <Icon name={item.icon} /><BilingualText copy={item.label} />
           </Link>
         ))}
+        <div className="header-account-mobile">{accountActions}</div>
       </nav>
     </header>
   );

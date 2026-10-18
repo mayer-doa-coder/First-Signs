@@ -4,7 +4,7 @@ set local lock_timeout = '5s';
 set local statement_timeout = '30s';
 
 -- Provider identities are HMAC-SHA256 digests created by the application.
--- Raw WhatsApp phone numbers, Telegram chat IDs, message text, and audio are
+-- Raw Telegram chat IDs, message text, and audio are
 -- never persisted here.
 create table private.part16_channel_sessions (
   channel_key text primary key,
@@ -19,7 +19,7 @@ create table private.part16_channel_sessions (
   created_at timestamptz not null default transaction_timestamp(),
   updated_at timestamptz not null default transaction_timestamp(),
   constraint part16_channel_sessions_key_format check (channel_key ~ '^[0-9a-f]{64}$'),
-  constraint part16_channel_sessions_provider_allowed check (provider in ('WHATSAPP', 'TELEGRAM')),
+  constraint part16_channel_sessions_provider_allowed check (provider = 'TELEGRAM'),
   constraint part16_channel_sessions_patient_format check (patient_id ~ '^JVH-DEMO-[A-F0-9]{8}$'),
   constraint part16_channel_sessions_source_allowed check (source_type in ('SELF', 'PHARMACY')),
   constraint part16_channel_sessions_source_matches_pharmacy check (
@@ -33,7 +33,7 @@ create table private.part16_channel_sessions (
 );
 
 comment on table private.part16_channel_sessions is
-  'Private WhatsApp/Telegram workflow state keyed only by a one-way channel digest; raw provider identities and audio are not stored.';
+  'Private Telegram workflow state keyed only by a one-way channel digest; raw provider identities and audio are not stored.';
 
 create table private.part16_channel_events (
   provider text not null,
@@ -44,7 +44,7 @@ create table private.part16_channel_events (
   created_at timestamptz not null default transaction_timestamp(),
   updated_at timestamptz not null default transaction_timestamp(),
   primary key (provider, event_id),
-  constraint part16_channel_events_provider_allowed check (provider in ('WHATSAPP', 'TELEGRAM')),
+  constraint part16_channel_events_provider_allowed check (provider = 'TELEGRAM'),
   constraint part16_channel_events_id_not_blank check (length(btrim(event_id)) between 1 and 255),
   constraint part16_channel_events_key_format check (channel_key ~ '^[0-9a-f]{64}$'),
   constraint part16_channel_events_status_allowed check (status in ('PROCESSING', 'DONE')),
@@ -117,7 +117,7 @@ declare
 begin
   if p_channel_key is null or p_channel_key !~ '^[0-9a-f]{64}$'
     or p_patient_id is null or p_patient_id !~ '^JVH-DEMO-[A-F0-9]{8}$'
-    or p_provider not in ('WHATSAPP', 'TELEGRAM')
+    or p_provider <> 'TELEGRAM'
     or p_source_type not in ('SELF', 'PHARMACY')
     or (p_source_type = 'SELF' and p_pharmacy_id is not null)
     or (p_source_type = 'PHARMACY' and p_pharmacy_id is null)
@@ -196,7 +196,7 @@ as $$
 declare
   existing_event private.part16_channel_events%rowtype;
 begin
-  if p_provider not in ('WHATSAPP', 'TELEGRAM')
+  if p_provider <> 'TELEGRAM'
     or p_event_id is null or length(btrim(p_event_id)) not between 1 and 255
     or p_channel_key is null or p_channel_key !~ '^[0-9a-f]{64}$' then
     raise exception 'Invalid channel event data' using errcode = '22023';
@@ -294,7 +294,7 @@ grant execute on function public.release_part16_channel_event(text, text, text) 
 comment on function public.get_part16_channel_session(text) is
   'Server-only lookup of a private messaging workflow by one-way channel digest.';
 comment on function public.save_part16_channel_session(text, text, text, text, text, text, text, jsonb, bigint) is
-  'Server-only optimistic, serialized save for WhatsApp/Telegram workflow state.';
+  'Server-only optimistic, serialized save for Telegram workflow state.';
 comment on function public.begin_part16_channel_event(text, text, text) is
   'Server-only webhook replay claim. A completed event returns its prior safe response.';
 

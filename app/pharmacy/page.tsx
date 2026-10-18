@@ -17,7 +17,7 @@ export default async function PharmacyPage({ searchParams }: { searchParams: Pha
 
   return (
     <PageShell eyebrow={{ bn: "ফার্মেসি কর্মক্ষেত্র", en: "Pharmacy workspace" }} title={{ bn: "সহায়তাপ্রাপ্ত সেবার লাইভ সারসংক্ষেপ", en: "Live assisted-care overview" }} description={{ bn: "শুধু নির্বাচিত ফার্মেসির সহায়তায় হওয়া স্ক্রিনিং, রেফারেল ও কর্মপ্রবাহভিত্তিক ক্রেডিট দেখুন। নিজে ব্যবহার করা ব্যক্তির কার্যক্রম আলাদা থাকে।", en: "Track only the selected pharmacy's assisted screenings, referrals, and workflow credits. Self-use activity remains separate." }} icon="pharmacy">
-      <ClayCard className="prototype-access-note" role="note"><BilingualText copy={{ bn: "এটি ডেমো ফার্মেসি কর্মক্ষেত্র। উৎপাদন ব্যবহারের staff login ও role authorization এখনো নির্ধারিত নয়। কোনো রোগীর ব্যক্তিগত তথ্য এখানে দেখানো হয় না।", en: "This is a demo pharmacy workspace. Production staff login and role authorization are not yet defined. No private patient information is shown here." }} /></ClayCard>
+      <ClayCard className="prototype-access-note" role="note"><BilingualText copy={{ bn: "এই ফার্মেসি কর্মক্ষেত্রে শুধুমাত্র সমষ্টিগত কার্যক্রম দেখা যায়। কোনো রোগীর ব্যক্তিগত তথ্য এখানে দেখানো হয় না।", en: "This pharmacy workspace shows aggregate activity only. No private patient information is shown here." }} /></ClayCard>
       <PharmacyDashboard initialPharmacyId={initialPharmacy.id} />
     </PageShell>
   );

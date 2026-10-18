@@ -34,7 +34,8 @@ const RECORD_PREFIX = "jvh-care-v1:";
 const PHONE_PREFIX = "jvh-care-phone-v1:";
 const ACTIVE_KEY = "jvh-care-active-v1";
 
-export const DEMO_PATIENT_ID_PATTERN = /^JVH-DEMO-[A-F0-9]{8}$/;
+/** Accept legacy IDs while issuing the neutral care-ID format for new sessions. */
+export const CARE_PATIENT_ID_PATTERN = /^(?:FS-CARE|JVH-DEMO)-[A-F0-9]{8}$/;
 
 /**
  * Self-use care stays in this browser so the person can reopen `My Care` later.
@@ -70,7 +71,7 @@ export function isCareRecord(value: unknown): value is CareRecord {
 
   return record.version === 1
     && typeof record.patientId === "string"
-    && DEMO_PATIENT_ID_PATTERN.test(record.patientId)
+    && CARE_PATIENT_ID_PATTERN.test(record.patientId)
     && (record.source === "self" || record.source === "pharmacy")
     && typeof record.area === "string"
     && Object.values(SAFETY_OUTCOMES).includes(record.screeningOutcome as SafetyOutcome)
@@ -118,11 +119,11 @@ function readRecord(storage: Storage, patientId: string) {
   return null;
 }
 
-export function createDemoPatientId() {
+export function createCarePatientId() {
   const bytes = new Uint8Array(4);
   window.crypto.getRandomValues(bytes);
   const suffix = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("").toUpperCase();
-  return `JVH-DEMO-${suffix}`;
+  return `FS-CARE-${suffix}`;
 }
 
 export function saveCareRecord(record: CareRecord) {

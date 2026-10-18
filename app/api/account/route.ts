@@ -50,7 +50,7 @@ export async function POST(request: Request) {
   if ("error" in context) return context.error;
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
   const patientId = typeof body?.patientId === "string" ? body.patientId.trim().toUpperCase() : "";
-  if (!/^JVH-DEMO-[A-F0-9]{8}$/.test(patientId)) return error("INVALID_CARE_RECORD", 400);
+  if (!/^(?:FS-CARE|JVH-DEMO)-[A-F0-9]{8}$/.test(patientId)) return error("INVALID_CARE_RECORD", 400);
   const { error: linkError } = await context.admin.from("account_patient_links").upsert({ user_id: context.user.id, patient_id: patientId }, { onConflict: "user_id" });
   if (linkError) return error("CARE_SAVE_FAILED", 409);
   return GET();

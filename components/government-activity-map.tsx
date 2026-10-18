@@ -73,7 +73,7 @@ export function GovernmentActivityMap({
           <path className="government-map-axis" d="M50 6V94M6 50H94" />
         </svg>
         <span className="government-map-north" lang="en" aria-hidden="true">N ↑</span>
-        <span className="government-map-caption"><BilingualText copy={{ bn: "বাংলাদেশজুড়ে বিভাগ ও ডেমো এলাকার আনুমানিক অবস্থান", en: "Approximate division and demo-area positions across Bangladesh" }} /></span>
+        <span className="government-map-caption"><BilingualText copy={{ bn: "বাংলাদেশজুড়ে বিভাগ ও বিস্তৃত এলাকার আনুমানিক অবস্থান", en: "Approximate division and broad-area positions across Bangladesh" }} /></span>
 
         {areas.map((area) => {
           const position = mapPosition(area.areaId);

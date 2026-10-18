@@ -134,8 +134,8 @@ export function GovernmentDashboard() {
             <p className="dashboard-demo-seed-note" role="note">
               <Icon name="info" />
               <BilingualText copy={{
-                bn: `ডেমো প্রস্তুতির জন্য ${formatCount(dashboard.demoSeededScreenings, "bn")}টি কৃত্রিম স্ক্রিনিং রেকর্ড সমষ্টিগত হিসাবে যুক্ত আছে। এগুলো বাস্তব রোগীর তথ্য নয়।`,
-                en: `${formatCount(dashboard.demoSeededScreenings, "en")} synthetic screening records are included for demo preparation. They are not real patient data.`,
+                bn: `প্রদর্শনের জন্য ${formatCount(dashboard.demoSeededScreenings, "bn")}টি কৃত্রিম স্ক্রিনিং রেকর্ড সমষ্টিগত হিসাবে যুক্ত আছে। এগুলো বাস্তব রোগীর তথ্য নয়।`,
+                en: `${formatCount(dashboard.demoSeededScreenings, "en")} synthetic screening records are included for presentation. They are not real patient data.`,
               }} />
             </p>
           )}
@@ -161,7 +161,7 @@ export function GovernmentDashboard() {
               <div><span><BilingualText copy={{ bn: "ভলিউম পর্যালোচনা প্রয়োজন এমন ফার্মেসি", en: "Pharmacies requiring volume review" }} /></span><strong lang={language}>{formatCount(dashboard.fraudAlerts.pharmaciesRequiringReview, language)}</strong></div>
               <div><span><BilingualText copy={{ bn: "পর্যালোচনায় রাখা পুরস্কার", en: "Rewards held for review" }} /></span><strong lang={language}>{formatCount(dashboard.fraudAlerts.heldRewardCount, language)}</strong></div>
             </div>
-            <p className="demo-rule-note"><Icon name="info" /><BilingualText copy={{ bn: "ডেমো নিয়ম: একটি ফার্মেসি চলমান ২৪ ঘণ্টায় ১০টি রেফারেল তৈরি করলে কার্যক্রম পর্যালোচনা প্রয়োজন। এটি প্রতারণার প্রমাণ নয়।", en: "Demo rule: a pharmacy requires activity review at 10 referrals in a rolling 24 hours. This is not proof of fraud." }} /></p>
+            <p className="demo-rule-note"><Icon name="info" /><BilingualText copy={{ bn: "পর্যালোচনার নিয়ম: একটি ফার্মেসি চলমান ২৪ ঘণ্টায় ১০টি রেফারেল তৈরি করলে কার্যক্রম পর্যালোচনা প্রয়োজন। এটি প্রতারণার প্রমাণ নয়।", en: "Review rule: a pharmacy requires activity review at 10 referrals in a rolling 24 hours. This is not proof of fraud." }} /></p>
           </ClayCard>
 
           <ClayCard className="referral-funnel-card" aria-labelledby="referral-funnel-title">
@@ -183,13 +183,13 @@ export function GovernmentDashboard() {
             <SectionHeading
               id="government-map-title"
               title={{ bn: "বিস্তৃত এলাকাভিত্তিক কার্যক্রম", en: "Broad-area activity map" }}
-              description={{ bn: "ডেমো ডেটার সর্বশেষ ৭ দিনে স্বতন্ত্র ব্যবহারকারীর নামবিহীন, সমষ্টিগত কার্যক্রম। কোনো ব্যক্তির অবস্থান দেখানো হয় না।", en: "Anonymous, aggregate activity from independent users in the latest 7 demo days. No individual location is shown." }}
+              description={{ bn: "সাম্প্রতিক ৭ দিনে স্বতন্ত্র ব্যবহারকারীর নামবিহীন, সমষ্টিগত কার্যক্রম। কোনো ব্যক্তির অবস্থান দেখানো হয় না।", en: "Anonymous, aggregate activity from independent users in the latest 7 days. No individual location is shown." }}
             />
 
             <div className="demo-rule-note" role="note">
               <Icon name="info" />
               <div>
-                <strong><BilingualText copy={{ bn: "ডেমো নিয়ম", en: "Demo rule" }} /></strong>
+                <strong><BilingualText copy={{ bn: "পর্যালোচনার নিয়ম", en: "Review rule" }} /></strong>
                 <p><BilingualText copy={{
                   bn: "স্বতন্ত্র রেফার করা ব্যবহারকারী ৩ জনের কম হলে স্বাভাবিক, ৩–৪ জন হলে নজরে রাখুন, এবং ৫ বা বেশি হলে লাল সতর্কতা। এটি চিকিৎসাবিষয়ক বা সরকার-অনুমোদিত সীমা নয়।",
                   en: "Fewer than 3 independent referred users is normal, 3–4 is watch, and 5 or more is a red warning. This is not a medical or government-approved threshold.",

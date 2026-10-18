@@ -10,7 +10,7 @@ declare
   channel_key text := repeat('a', 64);
 begin
   select * into saved from public.save_part16_channel_session(
-    channel_key, 'WHATSAPP', 'JVH-DEMO-A1B2C3D4', 'PHARMACY', 'DEMO-KHL-RAHMAN',
+    channel_key, 'TELEGRAM', 'JVH-DEMO-A1B2C3D4', 'PHARMACY', 'DEMO-KHL-RAHMAN',
     'bn', 'AWAITING_LANGUAGE', '{"screeningId":"JVH-SCR-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"}'::jsonb, 0
   );
   assert saved.version = 1 and saved.pharmacy_id = 'DEMO-KHL-RAHMAN',
@@ -18,12 +18,12 @@ begin
 
   select * into loaded from public.get_part16_channel_session(channel_key);
   assert loaded.patient_id = 'JVH-DEMO-A1B2C3D4'
-    and loaded.provider = 'WHATSAPP'
+    and loaded.provider = 'TELEGRAM'
     and loaded.state->>'screeningId' = 'JVH-SCR-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     'channel session lookup returned incorrect data';
 
   select * into saved from public.save_part16_channel_session(
-    channel_key, 'WHATSAPP', 'JVH-DEMO-A1B2C3D4', 'PHARMACY', 'DEMO-KHL-RAHMAN',
+    channel_key, 'TELEGRAM', 'JVH-DEMO-A1B2C3D4', 'PHARMACY', 'DEMO-KHL-RAHMAN',
     'en', 'AWAITING_CONSENT', '{"screeningId":"JVH-SCR-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"}'::jsonb, 1
   );
   assert saved.version = 2 and saved.language = 'en',
@@ -31,7 +31,7 @@ begin
 
   begin
     perform * from public.save_part16_channel_session(
-      channel_key, 'WHATSAPP', 'JVH-DEMO-A1B2C3D4', 'PHARMACY', 'DEMO-KHL-RAHMAN',
+      channel_key, 'TELEGRAM', 'JVH-DEMO-A1B2C3D4', 'PHARMACY', 'DEMO-KHL-RAHMAN',
       'bn', 'COUGH_DAYS', '{"screeningId":"JVH-SCR-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"}'::jsonb, 1
     );
   exception when serialization_failure then
@@ -39,27 +39,27 @@ begin
   end;
   assert version_conflict, 'stale channel session update was not rejected';
 
-  select * into claimed from public.begin_part16_channel_event('WHATSAPP', 'wamid.part16-test', channel_key);
+  select * into claimed from public.begin_part16_channel_event('TELEGRAM', 'update.part16-test', channel_key);
   assert claimed.should_process and claimed.previous_response is null,
     'new webhook event was not claimed';
 
-  select * into repeated from public.begin_part16_channel_event('WHATSAPP', 'wamid.part16-test', channel_key);
+  select * into repeated from public.begin_part16_channel_event('TELEGRAM', 'update.part16-test', channel_key);
   assert not repeated.should_process and repeated.previous_response is null,
     'in-flight duplicate webhook event was not suppressed';
 
   assert public.complete_part16_channel_event(
-    'WHATSAPP', 'wamid.part16-test', channel_key, 'safe replay response'
+    'TELEGRAM', 'update.part16-test', channel_key, 'safe replay response'
   ), 'webhook event was not completed';
 
-  select * into repeated from public.begin_part16_channel_event('WHATSAPP', 'wamid.part16-test', channel_key);
+  select * into repeated from public.begin_part16_channel_event('TELEGRAM', 'update.part16-test', channel_key);
   assert not repeated.should_process and repeated.previous_response = 'safe replay response',
     'completed webhook event did not return its replay-safe response';
 
-  select * into claimed from public.begin_part16_channel_event('WHATSAPP', 'wamid.part16-release', channel_key);
+  select * into claimed from public.begin_part16_channel_event('TELEGRAM', 'update.part16-release', channel_key);
   assert claimed.should_process, 'second event was not claimed';
-  assert public.release_part16_channel_event('WHATSAPP', 'wamid.part16-release', channel_key),
+  assert public.release_part16_channel_event('TELEGRAM', 'update.part16-release', channel_key),
     'failed event was not released for provider retry';
-  select * into claimed from public.begin_part16_channel_event('WHATSAPP', 'wamid.part16-release', channel_key);
+  select * into claimed from public.begin_part16_channel_event('TELEGRAM', 'update.part16-release', channel_key);
   assert claimed.should_process, 'released event could not be claimed again';
 
   assert not has_function_privilege('anon', 'public.get_part16_channel_session(text)', 'EXECUTE')

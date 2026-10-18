@@ -78,14 +78,6 @@ export function inspectServerConfiguration(
   const hasPublicAppUrl = validHttpUrl(publicAppUrl);
   const hasHearUrl = validHearServiceUrl(environment.HEAR_SERVICE_URL, environment);
   const hasHearToken = configured(environment, "HEAR_SERVICE_TOKEN");
-  const hasWhatsAppVariables = [
-    "WHATSAPP_ACCESS_TOKEN",
-    "WHATSAPP_PHONE_NUMBER_ID",
-    "WHATSAPP_APP_SECRET",
-    "WHATSAPP_VERIFY_TOKEN",
-    "WHATSAPP_GRAPH_VERSION",
-    "MESSAGING_ID_SECRET",
-  ].every((name) => configured(environment, name));
   const hasTelegramVariables = configured(environment, "TELEGRAM_BOT_TOKEN")
     && validTelegramWebhookSecret(environment.TELEGRAM_WEBHOOK_SECRET)
     && configured(environment, "MESSAGING_ID_SECRET");
@@ -108,20 +100,6 @@ export function inspectServerConfiguration(
       "HeAR acoustic processing",
       ["HEAR_SERVICE_URL", "HEAR_SERVICE_TOKEN"],
       hasHearUrl && hasHearToken,
-    ),
-    integration(
-      "whatsapp",
-      "WhatsApp webhook",
-      [
-        "APP_URL or NEXT_PUBLIC_APP_URL",
-        "MESSAGING_ID_SECRET",
-        "WHATSAPP_ACCESS_TOKEN",
-        "WHATSAPP_PHONE_NUMBER_ID",
-        "WHATSAPP_APP_SECRET",
-        "WHATSAPP_VERIFY_TOKEN",
-        "WHATSAPP_GRAPH_VERSION",
-      ],
-      hasPublicAppUrl && hasWhatsAppVariables,
     ),
     integration(
       "telegram",

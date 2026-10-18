@@ -56,7 +56,7 @@ export function LanguageSwitcher() {
         aria-pressed={language === "en"}
         onClick={() => setLanguage("en")}
       >
-        <span lang="en">English</span>
+        <span lang="en">en</span>
       </button>
       <button
         className="language-option"

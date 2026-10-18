@@ -1,41 +1,20 @@
 import assert from "node:assert/strict";
-import { createHmac } from "node:crypto";
 import { test } from "node:test";
 import { processChannelAudio } from "../lib/channel-audio.ts";
-import { constantTimeEqual, verifyMetaSignature } from "../lib/channel-security.ts";
-import { telegramEntryLink, whatsappEntryLink } from "../lib/messaging-links.ts";
+import { telegramEntryLink } from "../lib/messaging-links.ts";
 import { nativeTelegramRequest, requestTelegramWithRetry, type TelegramRequest } from "../lib/telegram-http.ts";
 import { downloadTelegramAudio } from "../lib/telegram-media.ts";
 
 test("self-use and pharmacy links preserve the intended source", () => {
-  const selfWhatsApp = whatsappEntryLink("+880 1712-345678", { source: "SELF" });
-  const pharmacyWhatsApp = whatsappEntryLink("8801712345678", {
-    source: "PHARMACY",
-    pharmacyId: "DEMO-KHL-RAHMAN",
-  });
   const selfTelegram = telegramEntryLink("@JvhDemoBot", { source: "SELF" });
   const pharmacyTelegram = telegramEntryLink("JvhDemoBot", {
     source: "PHARMACY",
     pharmacyId: "DEMO-KHL-RAHMAN",
   });
 
-  assert.equal(new URL(selfWhatsApp!).searchParams.get("text"), "START SELF");
-  assert.equal(new URL(pharmacyWhatsApp!).searchParams.get("text"), "START PHARMACY DEMO-KHL-RAHMAN");
   assert.equal(new URL(selfTelegram!).searchParams.get("start"), "self");
   assert.equal(new URL(pharmacyTelegram!).searchParams.get("start"), "pharmacy_DEMO-KHL-RAHMAN");
-  assert.equal(whatsappEntryLink("not-a-number", { source: "SELF" }), null);
   assert.equal(telegramEntryLink("bad", { source: "SELF" }), null);
-});
-
-test("Meta signatures are checked against the exact raw webhook body", () => {
-  const body = '{"entry":[]}';
-  const secret = "unit-test-app-secret";
-  const signature = `sha256=${createHmac("sha256", secret).update(body).digest("hex")}`;
-  assert.equal(verifyMetaSignature(body, signature, secret), true);
-  assert.equal(verifyMetaSignature(`${body} `, signature, secret), false);
-  assert.equal(verifyMetaSignature(body, null, secret), false);
-  assert.equal(constantTimeEqual("same", "same"), true);
-  assert.equal(constantTimeEqual("same", "different"), false);
 });
 
 test("channel audio uses the shared lowercase SHA-256 path and rejects invalid files", async () => {

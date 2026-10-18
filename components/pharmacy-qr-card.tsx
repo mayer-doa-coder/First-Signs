@@ -17,7 +17,7 @@ export function PharmacyQrCard({
 }: {
   pharmacy: DemoPharmacy;
   qrBaseUrl: string;
-  messagingLinks?: { whatsapp: string | null; telegram: string | null };
+  messagingLinks?: { telegram: string | null };
 }) {
   const entryPath = useMemo(
     () => getPharmacyScreeningPath(pharmacy.id),
@@ -58,7 +58,7 @@ export function PharmacyQrCard({
           <StatusPill
             tone="success"
             icon="pharmacy"
-            label={{ bn: "সক্রিয় ডেমো ফার্মেসি", en: "Active demo pharmacy" }}
+            label={{ bn: "সক্রিয় ফার্মেসি", en: "Active pharmacy" }}
           />
           <h3><BilingualText copy={pharmacy.name} /></h3>
           <p><BilingualText copy={pharmacy.area} /></p>
@@ -93,24 +93,9 @@ export function PharmacyQrCard({
         icon="pharmacy"
         label={{ bn: "ফার্মেসির সহায়তায় যাচাই করুন", en: "Pharmacy-assisted check" }}
       />
-      {(messagingLinks?.whatsapp || messagingLinks?.telegram) && (
+      {messagingLinks?.telegram && (
         <div className="pharmacy-message-links" aria-label="মেসেজিং চ্যানেল / Messaging channels">
-          {messagingLinks.whatsapp && (
-            <ActionLink
-              href={messagingLinks.whatsapp}
-              variant="quiet"
-              icon="screen"
-              label={{ bn: "WhatsApp-এ শুরু করুন", en: "Start in WhatsApp" }}
-            />
-          )}
-          {messagingLinks.telegram && (
-            <ActionLink
-              href={messagingLinks.telegram}
-              variant="quiet"
-              icon="screen"
-              label={{ bn: "Telegram-এ শুরু করুন", en: "Start in Telegram" }}
-            />
-          )}
+          <ActionLink href={messagingLinks.telegram} variant="quiet" icon="screen" label={{ bn: "Telegram-এ শুরু করুন", en: "Start in Telegram" }} />
         </div>
       )}
     </ClayCard>

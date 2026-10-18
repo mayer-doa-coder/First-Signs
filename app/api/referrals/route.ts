@@ -14,7 +14,7 @@ import { getTbCentre } from "@/lib/tb-centres";
 
 export const runtime = "nodejs";
 
-const PATIENT_ID_PATTERN = /^JVH-DEMO-[A-F0-9]{8}$/;
+const PATIENT_ID_PATTERN = /^(?:FS-CARE|JVH-DEMO)-[A-F0-9]{8}$/;
 const SCREENING_ID_PATTERN = /^JVH-SCR-[A-F0-9]{32}$/;
 const AUDIO_HASH_PATTERN = /^[0-9a-f]{64}$/;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

@@ -11,7 +11,7 @@ import { evaluateSafetyRules, SAFETY_OUTCOMES, type SafetyOutcome } from "@/lib/
 import { callReferralRpc, callSupabaseRpc, isReferralDatabaseConfigured } from "@/lib/supabase-server";
 import { getRecommendedCentre } from "@/lib/tb-centres";
 
-export type MessagingProvider = "WHATSAPP" | "TELEGRAM";
+export type MessagingProvider = "TELEGRAM";
 type ChannelLanguage = "bn" | "en";
 type ChannelStage =
   | "AWAITING_LANGUAGE"
@@ -130,36 +130,21 @@ function parseStart(provider: MessagingProvider, value: string | undefined): Sta
   const text = value?.trim() ?? "";
   if (!text) return { kind: "none" };
 
-  let payload: string | null = null;
-  if (provider === "TELEGRAM") {
-    const commandMatch = text.match(/^\/(?:start|restart)(?:@[A-Za-z][A-Za-z0-9_]{4,31})?(?:\s+([^\s]+))?$/i);
-    const plainMatch = text.match(/^START(?:\s+(SELF|PHARMACY)(?:\s+([A-Za-z0-9_-]+))?)?$/i);
-    if (!commandMatch && !plainMatch) return { kind: "none" };
-    if (plainMatch) {
-      if (!plainMatch[1] || plainMatch[1].toUpperCase() === "SELF") {
-        return plainMatch[2] ? { kind: "invalid" } : { kind: "valid", sourceType: "SELF" };
-      }
-      const pharmacy = getActivePharmacy(plainMatch[2]);
-      return pharmacy
-        ? { kind: "valid", sourceType: "PHARMACY", pharmacyId: pharmacy.id }
-        : { kind: "invalid" };
+  const commandMatch = text.match(/^\/(?:start|restart)(?:@[A-Za-z][A-Za-z0-9_]{4,31})?(?:\s+([^\s]+))?$/i);
+  const plainMatch = text.match(/^START(?:\s+(SELF|PHARMACY)(?:\s+([A-Za-z0-9_-]+))?)?$/i);
+  if (!commandMatch && !plainMatch) return { kind: "none" };
+  if (plainMatch) {
+    if (!plainMatch[1] || plainMatch[1].toUpperCase() === "SELF") {
+      return plainMatch[2] ? { kind: "invalid" } : { kind: "valid", sourceType: "SELF" };
     }
-    payload = commandMatch?.[1]?.trim() ?? "self";
-    if (payload.toLowerCase() === "self") return { kind: "valid", sourceType: "SELF" };
-    const pharmacyMatch = payload.match(/^pharmacy_([A-Za-z0-9_-]+)$/i);
-    if (!pharmacyMatch) return { kind: "invalid" };
-    const pharmacy = getActivePharmacy(pharmacyMatch[1]);
-    return pharmacy
-      ? { kind: "valid", sourceType: "PHARMACY", pharmacyId: pharmacy.id }
-      : { kind: "invalid" };
+    const pharmacy = getActivePharmacy(plainMatch[2]);
+    return pharmacy ? { kind: "valid", sourceType: "PHARMACY", pharmacyId: pharmacy.id } : { kind: "invalid" };
   }
-
-  const match = text.match(/^START(?:\s+(SELF|PHARMACY)(?:\s+([A-Za-z0-9_-]+))?)?$/i);
-  if (!match) return { kind: "none" };
-  if (!match[1] || match[1].toUpperCase() === "SELF") {
-    return match[2] ? { kind: "invalid" } : { kind: "valid", sourceType: "SELF" };
-  }
-  const pharmacy = getActivePharmacy(match[2]);
+  const payload = commandMatch?.[1]?.trim() ?? "self";
+  if (payload.toLowerCase() === "self") return { kind: "valid", sourceType: "SELF" };
+  const pharmacyMatch = payload.match(/^pharmacy_([A-Za-z0-9_-]+)$/i);
+  if (!pharmacyMatch) return { kind: "invalid" };
+  const pharmacy = getActivePharmacy(pharmacyMatch[1]);
   return pharmacy
     ? { kind: "valid", sourceType: "PHARMACY", pharmacyId: pharmacy.id }
     : { kind: "invalid" };
@@ -222,7 +207,7 @@ function parseSessionRow(row: Record<string, unknown>): ChannelSession | null {
   const state = row.state;
   const version = Number(row.version);
   if (!CHANNEL_KEY_PATTERN.test(channelKey)
-    || (provider !== "WHATSAPP" && provider !== "TELEGRAM")
+    || provider !== "TELEGRAM"
     || !PATIENT_ID_PATTERN.test(patientId)
     || (sourceType !== "SELF" && sourceType !== "PHARMACY")
     || (sourceType === "SELF" ? pharmacyId !== undefined : !getActivePharmacy(pharmacyId))
@@ -647,9 +632,6 @@ async function processTurn(session: ChannelSession, event: IncomingChannelEvent)
             "TELEGRAM_MEDIA_PATH_INVALID",
             "TELEGRAM_MEDIA_DOWNLOAD_FAILED",
             "TELEGRAM_MEDIA_DOWNLOAD_NETWORK_FAILED",
-            "WHATSAPP_MEDIA_LOOKUP_FAILED",
-            "WHATSAPP_MEDIA_URL_INVALID",
-            "WHATSAPP_MEDIA_DOWNLOAD_FAILED",
           ]);
           // Provider diagnostics intentionally contain no patient identity,
           // message text, file ID, URL, media bytes, or secret.
@@ -787,13 +769,6 @@ export function channelConfigurationStatus() {
   return {
     identitySecret: Boolean(process.env.MESSAGING_ID_SECRET && process.env.MESSAGING_ID_SECRET.length >= 32),
     publicAppUrl: Boolean(process.env.APP_URL ?? process.env.NEXT_PUBLIC_APP_URL),
-    whatsapp: Boolean(
-      process.env.WHATSAPP_ACCESS_TOKEN
-      && process.env.WHATSAPP_PHONE_NUMBER_ID
-      && process.env.WHATSAPP_APP_SECRET
-      && process.env.WHATSAPP_VERIFY_TOKEN
-      && /^v\d+\.\d+$/.test(process.env.WHATSAPP_GRAPH_VERSION ?? ""),
-    ),
     telegram: Boolean(
       process.env.TELEGRAM_BOT_TOKEN
       && process.env.TELEGRAM_WEBHOOK_SECRET,

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient, currentAuthUser, isAccountAuthConfigured } from "@/lib/auth";
-import { isGeminiConfigured, requestGeminiHealthAssistant, type HealthAssistantAttachment } from "@/lib/gemini-server";
+import { isGeminiConfigured, requestGeminiHealthAssistant, requestGeminiTranscription, type HealthAssistantAttachment } from "@/lib/gemini-server";
 import { retrieveHealthSources, type HealthSource } from "@/lib/health-rag";
 
 export const runtime = "nodejs";
@@ -31,6 +31,12 @@ async function transientAttachment(file: File | null): Promise<HealthAssistantAt
   if (!supportedMedia.has(mime) || file.size < 512 || file.size > limit) throw new Error("INVALID_ASSISTANT_MEDIA");
   const bytes = new Uint8Array(await file.arrayBuffer()); if (!validSignature(bytes, mime)) throw new Error("INVALID_ASSISTANT_MEDIA");
   return { mimeType: mime, base64: Buffer.from(bytes).toString("base64") };
+}
+
+async function transientAttachments(files: File[]) {
+  if (files.length > 3) throw new Error("TOO_MANY_ASSISTANT_MEDIA");
+  const attachments = await Promise.all(files.map((file) => transientAttachment(file)));
+  return attachments.filter((attachment): attachment is HealthAssistantAttachment => Boolean(attachment));
 }
 
 async function signedIn() {
@@ -75,15 +81,23 @@ export async function POST(request: Request) {
     await context.admin.from("health_assistant_preferences").upsert({ user_id: context.user.id, activity_context_enabled: body.activityContextEnabled, memory_enabled: body.memoryEnabled, consented_at: body.activityContextEnabled || body.memoryEnabled ? new Date().toISOString() : null, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
     return NextResponse.json({ saved: true }, { headers });
   }
+  const files = form?.getAll("media").filter((entry): entry is File => entry instanceof File) ?? [];
+  let attachments: HealthAssistantAttachment[];
+  try { attachments = await transientAttachments(files); } catch (reason) { return error(reason instanceof Error ? reason.message : "INVALID_ASSISTANT_MEDIA", 400); }
+  if (action === "TRANSCRIBE") {
+    if (attachments.length !== 1 || !attachments[0].mimeType.startsWith("audio/")) return error("INVALID_TRANSCRIPTION_MEDIA", 400);
+    try {
+      const transcript = await requestGeminiTranscription(attachments[0], body.language);
+      return NextResponse.json({ transcript }, { headers });
+    } catch { return error("TRANSCRIPTION_UNAVAILABLE", 503); }
+  }
   const question = message(body.message); if (question.length < 3) return error("INVALID_ASSISTANT_MESSAGE", 400);
-  let attachment: HealthAssistantAttachment | undefined;
-  try { attachment = await transientAttachment(form?.get("media") instanceof File ? form.get("media") as File : null); } catch (reason) { return error(reason instanceof Error ? reason.message : "INVALID_ASSISTANT_MEDIA", 400); }
   const state = context ? await accountContext(context.user.id, context.admin) : { settings: { activityContextEnabled: false, memoryEnabled: false }, context: "Anonymous visitor: no personal context." };
   const [sources, history] = await Promise.all([retrieveHealthSources(question), context && state.settings.memoryEnabled ? context.admin.from("health_assistant_messages").select("role,content").eq("user_id", context.user.id).order("created_at", { ascending: false }).limit(6) : Promise.resolve({ data: [] as { role: string; content: string }[] })]);
   const prompt = [`Question: ${question}`, `Language selected: ${body.language}`, `Account context: ${state.context}`, `Recent opt-in conversation: ${(history.data ?? []).reverse().map((item) => `${item.role}: ${item.content}`).join("\n") || "none"}`, "Approved sources:", ...sources.map((source, index) => `[${index + 1}] ${source.title} (${source.url})\n${source.excerpt}`), "Answer with health education only. If this concerns blood in sputum, severe breathing difficulty, chest pain, or emergency symptoms, say to use the app's urgent guidance and seek urgent care."].join("\n\n");
   let result: { answerBn: string; answerEn: string };
   try {
-    result = isGeminiConfigured() ? await requestGeminiHealthAssistant(prompt, attachment) : { answerBn: "AI সহায়ক এখন সেটআপ করা নেই। যাচাইকৃত উৎসের তথ্য দেখুন এবং ব্যক্তিগত চিকিৎসা বা ওষুধের সিদ্ধান্তের জন্য চিকিৎসক বা ফার্মাসিস্টের সঙ্গে কথা বলুন।", answerEn: "The AI assistant is not configured now. Review the verified sources and speak with a clinician or pharmacist for personal medical or medicine decisions." };
+    result = isGeminiConfigured() ? await requestGeminiHealthAssistant(prompt, attachments) : { answerBn: "AI সহায়ক এখন সেটআপ করা নেই। যাচাইকৃত উৎসের তথ্য দেখুন এবং ব্যক্তিগত চিকিৎসা বা ওষুধের সিদ্ধান্তের জন্য চিকিৎসক বা ফার্মাসিস্টের সঙ্গে কথা বলুন।", answerEn: "The AI assistant is not configured now. Review the verified sources and speak with a clinician or pharmacist for personal medical or medicine decisions." };
   } catch {
     result = { answerBn: "এই প্রশ্ন বা সংযুক্ত ফাইল সম্পর্কে নির্ভরযোগ্য উত্তর দেওয়ার মতো যথেষ্ট তথ্য আমার কাছে নেই। ব্যক্তিগত স্বাস্থ্য বা ওষুধের সিদ্ধান্তের জন্য চিকিৎসক বা ফার্মাসিস্টের সঙ্গে কথা বলুন।", answerEn: "I do not have enough reliable information to answer this question or interpret the attachment. Please speak with a clinician or pharmacist for a personal health or medicine decision." };
   }
