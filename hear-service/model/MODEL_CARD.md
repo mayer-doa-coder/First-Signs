@@ -28,3 +28,12 @@ These results measure agreement with CoughVID's automated weak labels, not clini
 - Raw audio and embeddings are transient in this application and are not retained by the acoustic workflow.
 
 See `../DATASETS.md` and Google's HAI-DEF model card and terms for provenance and licence restrictions.
+# Optional research-only TB triage artifact
+
+`tb_triage_classifier.json` is deliberately absent until a separately approved,
+consented TBscreen training cohort has been processed. If present it must be a
+versioned `tb_triage_research_only` artifact with 512 HeAR features plus the
+five transient app inputs, participant-disjoint evaluation, calibration, and
+Bangladesh external-validation limitations. The service exposes only a concern
+band, never a probability. It is not a diagnosis or rule-out and cannot change
+fixed symptom safety rules.

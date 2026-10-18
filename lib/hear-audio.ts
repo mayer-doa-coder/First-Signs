@@ -7,6 +7,10 @@ export const HEAR_SIGNAL_CODES = [
 ] as const;
 
 export type HearSignalCode = (typeof HEAR_SIGNAL_CODES)[number];
+export const HEAR_TRIAGE_BANDS = ["ELEVATED_ACOUSTIC_CONCERN", "LOWER_ACOUSTIC_CONCERN", "INCONCLUSIVE"] as const;
+export type HearTriageBand = (typeof HEAR_TRIAGE_BANDS)[number];
+export type HearTriageInputs = { coughDays: number; fever: boolean; nightSweats: boolean; weightLoss: boolean; bloodInSputum: boolean };
+export type HearTriage = { band: HearTriageBand; modelVersion: string; inputMode: "AUDIO_PLUS_SCREENING_ANSWERS" };
 
 export type HearAnalysis = {
   available: true;
@@ -16,6 +20,7 @@ export type HearAnalysis = {
   embeddingCreated: true;
   coughDetected: boolean;
   signal: HearSignalCode;
+  triage?: HearTriage;
 };
 
 export type HearUnavailable = {
@@ -38,7 +43,13 @@ function isHearAnalysis(value: unknown): value is HearAnalysis {
     && result.classifierVersion.length > 0
     && result.embeddingCreated === true
     && typeof result.coughDetected === "boolean"
-    && HEAR_SIGNAL_CODES.includes(result.signal as HearSignalCode);
+    && HEAR_SIGNAL_CODES.includes(result.signal as HearSignalCode)
+    && (result.triage === undefined || (
+      typeof result.triage === "object" && result.triage !== null
+      && HEAR_TRIAGE_BANDS.includes(result.triage.band as HearTriageBand)
+      && typeof result.triage.modelVersion === "string"
+      && result.triage.inputMode === "AUDIO_PLUS_SCREENING_ANSWERS"
+    ));
 }
 
 /**
@@ -48,6 +59,7 @@ function isHearAnalysis(value: unknown): value is HearAnalysis {
 export async function analyzeWithHear(
   bytes: Uint8Array,
   mimeType: string,
+  triageInputs?: HearTriageInputs,
 ): Promise<HearResult> {
   const serviceUrl = process.env.HEAR_SERVICE_URL?.trim();
   const serviceToken = process.env.HEAR_SERVICE_TOKEN?.trim();
@@ -67,6 +79,7 @@ export async function analyzeWithHear(
   const audioBuffer = new ArrayBuffer(bytes.byteLength);
   new Uint8Array(audioBuffer).set(bytes);
   body.set("audio", new Blob([audioBuffer], { type: mimeType }), "cough-audio");
+  if (triageInputs) body.set("triage_inputs", JSON.stringify(triageInputs));
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);

@@ -12,6 +12,8 @@ type CaptureStatus = "idle" | "requesting" | "recording" | "checking" | "ready" 
 type MeterStatus = "idle" | "live" | "unavailable";
 type DirectCaptureAvailability = "checking" | "available" | "needs-https" | "unsupported";
 type HearSignal = "COUGH_LIKE_SIGNAL_PRESENT" | "NO_COUGH_LIKE_SIGNAL_DETECTED" | "INCONCLUSIVE";
+type TriageInputs = { coughDays: number; fever: boolean; nightSweats: boolean; weightLoss: boolean; bloodInSputum: boolean };
+type TriageBand = "ELEVATED_ACOUSTIC_CONCERN" | "LOWER_ACOUSTIC_CONCERN" | "INCONCLUSIVE";
 type AcousticAnalysis =
   | {
       available: true;
@@ -21,6 +23,7 @@ type AcousticAnalysis =
       embeddingCreated: true;
       coughDetected: boolean;
       signal: HearSignal;
+      triage?: { band: TriageBand; modelVersion: string; inputMode: "AUDIO_PLUS_SCREENING_ANSWERS" };
     }
   | { available: false; reason: string };
 
@@ -173,10 +176,12 @@ export function CoughAudioStep({
   onBack,
   onContinue,
   onSkip,
+  triageInputs,
 }: {
   onBack: () => void;
   onContinue: (choice: Exclude<CoughAudioChoice, "skipped">, audioHash?: string) => void;
   onSkip: () => void;
+  triageInputs: TriageInputs;
 }) {
   const [status, setStatus] = useState<CaptureStatus>("idle");
   const [source, setSource] = useState<Exclude<CoughAudioChoice, "skipped"> | null>(null);
@@ -349,6 +354,7 @@ export function CoughAudioStep({
       try {
         const body = new FormData();
         body.append("audio", blob, `cough.${blob.type.includes("mp4") ? "m4a" : "webm"}`);
+        body.append("triageInputs", JSON.stringify(triageInputs));
         const response = await fetch("/api/audio/analyze", { method: "POST", body });
         const payload = await response.json() as AcousticAnalysis | { error?: string };
         if (!response.ok || typeof payload !== "object" || !("available" in payload)) {
@@ -719,7 +725,25 @@ export function CoughAudioStep({
                     : { bn: "ফলাফল অনির্দিষ্ট", en: "Inconclusive" }
               } /></dd>
             </div>
+            {acousticAnalysis.available && acousticAnalysis.triage && (
+              <div>
+                <dt><BilingualText copy={{ bn: "গবেষণাভিত্তিক অডিও উদ্বেগ সংকেত", en: "Research acoustic concern signal" }} /></dt>
+                <dd><BilingualText copy={
+                  acousticAnalysis.triage.band === "ELEVATED_ACOUSTIC_CONCERN"
+                    ? { bn: "বর্ধিত উদ্বেগ", en: "Elevated concern" }
+                    : acousticAnalysis.triage.band === "LOWER_ACOUSTIC_CONCERN"
+                      ? { bn: "তুলনামূলক কম উদ্বেগ", en: "Lower concern" }
+                      : { bn: "অনির্দিষ্ট", en: "Inconclusive" }
+                } /></dd>
+              </div>
+            )}
           </dl>
+          {acousticAnalysis.available && acousticAnalysis.triage && (
+            <p className="audio-triage-notice"><BilingualText copy={acousticAnalysis.triage.band === "ELEVATED_ACOUSTIC_CONCERN"
+              ? { bn: "এটি গবেষণাভিত্তিক ট্রায়াজ সংকেত, রোগ নির্ণয় নয়। নির্দিষ্ট উপসর্গভিত্তিক ফলাফল ও পরবর্তী পদক্ষেপই প্রাধান্য পাবে।", en: "This is an investigational triage signal, not a diagnosis. The fixed symptom-based outcome and next action remain primary." }
+              : { bn: "এই গবেষণাভিত্তিক সংকেত যক্ষ্মা বাদ দেয় না। নির্দিষ্ট উপসর্গভিত্তিক ফলাফল ও পরবর্তী পদক্ষেপ অনুসরণ করুন।", en: "This investigational signal does not rule out TB. Follow the fixed symptom-based outcome and next action." }
+            } /></p>
+          )}
           {acousticAnalysis.available && (
             <p className="audio-model-version" lang="en">
               {acousticAnalysis.modelVersion} · {acousticAnalysis.classifierVersion}

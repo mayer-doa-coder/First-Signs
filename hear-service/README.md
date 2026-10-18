@@ -26,6 +26,36 @@ Configure Next.js with the matching `HEAR_SERVICE_TOKEN` and `HEAR_SERVICE_URL=h
 
 The Next.js web service cannot run this Python process on `127.0.0.1`. Deploy this directory as a **separate Render Docker Web Service**, with the repository root as its Docker build context and `hear-service/Dockerfile` as its Dockerfile path. Use a persistent disk mounted at `/var/lib/first-signs-hear`; the service downloads the approved model there only when it is missing.
 
+## Research-only TB triage artifact
+
+The production endpoint can additionally return a banded, investigational
+acoustic concern signal only when `model/tb_triage_classifier.json` exists and
+passes structural validation. It returns no probability, embedding, raw score,
+or raw audio. Missing, malformed, or incomplete artifacts leave the existing
+cough-presence response unchanged.
+
+`tbscreen_stream.py` is a range-only reader for the external TBscreen archive:
+it never downloads the archive wholesale, uses a 1 GiB cache ceiling, and
+deletes each temporary audio file immediately after its embedding callback.
+It fails closed unless the operator explicitly sets
+`TBSCREEN_DATA_TERMS_CONFIRMED=yes` after independently accepting the data
+terms. Run its metadata inspection before making a local column map; no data
+download is started by the application.
+
+Train only from an embedding-only NPZ with participant IDs and the five fields
+used by the app:
+
+```powershell
+$env:TBSCREEN_DATA_TERMS_CONFIRMED = "yes"
+.artifacts\hear-venv\Scripts\python hear-service\extract_tb_triage_embeddings.py .artifacts\tb-triage\approved_selection.jsonl
+.artifacts\hear-venv\Scripts\python hear-service\train_tb_triage.py .artifacts\tb-triage\consented_embeddings.npz
+```
+
+The trainer rejects CoughVID paths, uses participant-disjoint train/validation/
+test splits, class weighting, validation calibration, and writes a versioned
+model card payload into the artifact. It is research triage only: it cannot
+diagnose or rule out TB and never replaces fixed symptom safety rules.
+
 Set these server-only variables on the separate service:
 
 - `HEAR_SERVICE_TOKEN`: a private random value.

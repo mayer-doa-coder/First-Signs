@@ -12,3 +12,14 @@
 No location, age, sex, health-status, or other participant metadata is copied into the prepared manifest or classifier artifact. The downloaded archive and extracted recordings stay under the gitignored `.artifacts/` directory.
 
 This dataset is not a TB dataset. Results produced from it must not be described as TB risk, diagnosis, or clinical validation. Independent Bangladesh/device evaluation is still required before any health-impacting use.
+# TBscreen (planned; terms-gated)
+
+- External archive: `https://dataset.cs.washington.edu/shwetak/TBscreen_Dataset.zip`.
+- The public code record does not itself grant the right to process raw cohort
+  audio. Read and accept the dataset terms separately before setting the local
+  acknowledgement variable.
+- Only consented forced-cough recordings may be selected. Never use passive
+  recordings, non-consented material, or CoughVID for TB training.
+- The range reader stores embeddings, labels, participant IDs, and approved
+  shared metadata only under the gitignored `.artifacts/tb-triage`; it deletes
+  temporary audio immediately.

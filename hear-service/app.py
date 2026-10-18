@@ -14,7 +14,7 @@ import av
 import numpy as np
 import tensorflow as tf
 from av.audio.resampler import AudioResampler
-from fastapi import FastAPI, File, Header, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
 
 SAMPLE_RATE = 16_000
 CLIP_SAMPLES = 32_000
@@ -27,6 +27,7 @@ LABELS = ("Cough", "Snore", "Baby Cough", "Breathe", "Sneeze", "Throat Clear", "
 ROOT = Path(__file__).resolve().parent
 MODEL_ROOT = Path(os.environ.get("HEAR_MODEL_PATH", ROOT.parent / ".artifacts" / "hear-model"))
 CLASSIFIER_PATH = Path(os.environ.get("HEAR_CLASSIFIER_PATH", ROOT / "model" / "cough_classifier.json"))
+TRIAGE_CLASSIFIER_PATH = Path(os.environ.get("HEAR_TRIAGE_CLASSIFIER_PATH", ROOT / "model" / "tb_triage_classifier.json"))
 SERVICE_TOKEN = os.environ.get("HEAR_SERVICE_TOKEN", "")
 
 app = FastAPI(title="First Signs HeAR service", docs_url=None, redoc_url=None)
@@ -66,12 +67,77 @@ def _load_models() -> dict[str, Any]:
     ):
         raise RuntimeError("INVALID_HEAR_CLASSIFIER")
 
+    triage = _load_optional_triage_classifier()
     hear = tf.saved_model.load(str(MODEL_ROOT)).signatures["serving_default"]
     detector_path = MODEL_ROOT / "event_detector" / "event_detector_small"
     detector = tf.saved_model.load(str(detector_path)).signatures["serving_default"]
     _models.update(hear=hear, detector=detector, classifier=classifier,
                    weights=weights, mean=mean, scale=np.maximum(scale, 1e-6))
+    if triage is not None:
+        _models["triage"] = triage
     return _models
+
+
+def _load_optional_triage_classifier() -> dict[str, Any] | None:
+    """Return a structurally-valid research artifact, never a partial model."""
+    if not TRIAGE_CLASSIFIER_PATH.is_file():
+        return None
+    try:
+        artifact = json.loads(TRIAGE_CLASSIFIER_PATH.read_text(encoding="utf-8"))
+        names = artifact.get("clinicalFeatureNames")
+        weights = np.asarray(artifact.get("weights"), dtype=np.float32)
+        mean = np.asarray(artifact.get("mean"), dtype=np.float32)
+        scale = np.asarray(artifact.get("scale"), dtype=np.float32)
+        calibration = artifact.get("calibration")
+        threshold = artifact.get("elevatedThreshold")
+        if (
+            artifact.get("task") != "tb_triage_research_only"
+            or not isinstance(artifact.get("version"), str)
+            or names != ["coughDays", "fever", "nightSweats", "weightLoss", "bloodInSputum"]
+            or weights.shape != (517,) or mean.shape != (517,) or scale.shape != (517,)
+            or not isinstance(calibration, dict)
+            or not isinstance(calibration.get("slope"), (int, float))
+            or not isinstance(calibration.get("intercept"), (int, float))
+            or not isinstance(threshold, (int, float)) or not 0.0 < float(threshold) < 1.0
+            or not all(np.all(np.isfinite(value)) for value in (weights, mean, scale))
+        ):
+            return None
+        artifact["_weights"] = weights
+        artifact["_mean"] = mean
+        artifact["_scale"] = np.maximum(scale, 1e-6)
+        return artifact
+    except (OSError, ValueError, TypeError):
+        return None
+
+
+def _triage_features(embedding: np.ndarray, values: dict[str, Any] | None) -> np.ndarray | None:
+    if not isinstance(values, dict):
+        return None
+    cough_days = values.get("coughDays")
+    flags = [values.get(name) for name in ("fever", "nightSweats", "weightLoss", "bloodInSputum")]
+    if isinstance(cough_days, bool) or not isinstance(cough_days, (int, float)) or not 0 <= cough_days <= 3650:
+        return None
+    if not all(isinstance(value, bool) for value in flags):
+        return None
+    clinical = np.asarray([float(cough_days), *[float(value) for value in flags]], dtype=np.float32)
+    return np.concatenate((embedding, clinical))
+
+
+def _research_triage(embedding: np.ndarray, values: dict[str, Any] | None, cough_detected: bool, models: dict[str, Any]) -> dict[str, str] | None:
+    artifact = models.get("triage")
+    features = _triage_features(embedding, values)
+    if artifact is None or features is None:
+        return None
+    if not cough_detected:
+        return {"band": "INCONCLUSIVE", "modelVersion": str(artifact["version"]), "inputMode": "AUDIO_PLUS_SCREENING_ANSWERS"}
+    normalized = (features - artifact["_mean"]) / artifact["_scale"]
+    raw = float(np.dot(normalized, artifact["_weights"]) + artifact["bias"])
+    calibrated = 1.0 / (1.0 + math.exp(-max(-40.0, min(40.0, artifact["calibration"]["slope"] * raw + artifact["calibration"]["intercept"]))))
+    return {
+        "band": "ELEVATED_ACOUSTIC_CONCERN" if calibrated >= float(artifact["elevatedThreshold"]) else "LOWER_ACOUSTIC_CONCERN",
+        "modelVersion": str(artifact["version"]),
+        "inputMode": "AUDIO_PLUS_SCREENING_ANSWERS",
+    }
 
 
 def _decode_audio(data: bytes) -> np.ndarray:
@@ -121,7 +187,7 @@ def _probability(embedding: np.ndarray, models: dict[str, Any]) -> float:
     return 1.0 / (1.0 + math.exp(-max(-40.0, min(40.0, logit))))
 
 
-def analyze_bytes(data: bytes) -> dict[str, Any]:
+def analyze_bytes(data: bytes, triage_inputs: dict[str, Any] | None = None) -> dict[str, Any]:
     models = _load_models()
     clips = _clips(_decode_audio(data))
     detector_scores: list[float] = []
@@ -145,7 +211,7 @@ def analyze_bytes(data: bytes) -> dict[str, Any]:
         else "NO_COUGH_LIKE_SIGNAL_DETECTED" if not detector_detected and not classifier_detected
         else "INCONCLUSIVE"
     )
-    return {
+    result: dict[str, Any] = {
         "available": True,
         "model": "GOOGLE_HEAR",
         "modelVersion": "1.0.0",
@@ -154,6 +220,10 @@ def analyze_bytes(data: bytes) -> dict[str, Any]:
         "coughDetected": detector_detected,
         "signal": signal,
     }
+    triage = _research_triage(embedding, triage_inputs, detector_detected, models)
+    if triage is not None:
+        result["triage"] = triage
+    return result
 
 
 @app.get("/health")
@@ -168,6 +238,7 @@ def health() -> dict[str, str]:
 @app.post("/analyze")
 async def analyze(
     audio: UploadFile = File(...),
+    triage_inputs: str | None = Form(default=None),
     authorization: str | None = Header(default=None),
 ) -> dict[str, Any]:
     _authorized(authorization)
@@ -175,6 +246,7 @@ async def analyze(
     if len(data) < 1_024 or len(data) > MAX_AUDIO_BYTES:
         raise HTTPException(status_code=400, detail="INVALID_AUDIO_SIZE")
     try:
-        return analyze_bytes(data)
+        parsed_inputs = json.loads(triage_inputs) if triage_inputs else None
+        return analyze_bytes(data, parsed_inputs)
     except (ValueError, RuntimeError):
         raise HTTPException(status_code=422, detail="AUDIO_PROCESSING_FAILED")
