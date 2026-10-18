@@ -68,14 +68,16 @@ check(await page.getByText("কার্যক্রম পর্যালোচ
 check(await page.getByText("পুরস্কারের যোগ্য নয় — সাম্প্রতিক স্ক্রিনিং ইতিমধ্যে আছে।", { exact: true }).isVisible(), "Duplicate-reward message is missing");
 check((await page.getByRole("link", { name: /রেফারেল যাচাই খুলুন|Open referral verification/ }).count()) === 0, "Pharmacy dashboard still links directly to centre verification");
 
-await page.getByRole("button", { name: "এখন হালনাগাদ করুন" }).click();
+const refreshButton = page.locator(".pharmacy-dashboard-toolbar button");
+await refreshButton.waitFor();
+await refreshButton.click();
 await page.waitForFunction(() => document.querySelectorAll(".metric-value")[2]?.textContent === "2");
 const refreshedValues = await page.locator(".metric-value").allTextContents();
 check(refreshedValues[2] === "2", "Completed referral count did not update after refresh");
 check(refreshedValues[3] === "100.0%", "Completion rate did not update with completion count");
 check((await page.locator(".reward-event-list").textContent())?.includes("স্বাধীনভাবে যাচাইকৃত উপস্থিতি"), "Verified-completion credit is missing");
 
-await page.getByRole("button", { name: "English" }).click();
+await page.getByRole("button", { name: "en", exact: true }).click();
 check(await page.getByText("Illustrative prototype incentive").isVisible(), "English incentive label is unavailable");
 check(await page.getByText(/never linked to a positive TB result/i).isVisible(), "English reward safety message is missing");
 check(await page.getByText("Activity requires review", { exact: true }).isVisible(), "English volume-review warning is unavailable");

@@ -150,13 +150,18 @@ These are required for the hackathon prototype.
 - screening result wording
 - referral recommendation
 - simple companion-style follow-up
-- optional passwordless account sign-in after or before screening; anonymous screening remains available
+- optional account sign-up and password sign-in after or before screening; anonymous screening remains available
 - a private My Care area for the person's own screening, referral, attendance, follow-up, and consented reminders; it must not diagnose TB or manage treatment
 
 ### Account and Staff Access
 
-- Patient accounts use an optional passwordless email link and may store a name and optional Bangladesh phone number.
-- Pharmacy, TB-centre, and government accounts are invite-only and receive only their assigned workspace.
+- Public sign-up creates a `PATIENT` account only and collects a display name, unique username, email address, and password. Passwords are managed only by Supabase Auth and are never stored in application tables.
+- Login accepts either the verified email address or the unique username plus password. Username-to-email resolution happens only on the trusted application server and never exposes the account directory to the browser.
+- Password recovery asks for the account email, sends a six-digit recovery code, accepts a new password only after Supabase verifies that code, signs the recovery session out, and returns the person to login.
+- "Remember me" keeps the application session for at most 30 days. Without it, the application signs the person out after one hour without interaction.
+- Pharmacy, TB-centre, government, and platform-admin accounts are invite-only. Public sign-up can never choose or promote itself to a staff role.
+- The effective role controls the signed-in interface: `PATIENT` receives patient tools; `PHARMACY_STAFF` receives only its assigned pharmacy workspace; `TB_CENTRE_STAFF` receives only its assigned centre verification workspace; `GOVERNMENT_VIEWER` receives only the anonymous public-health workspace; and `PLATFORM_ADMIN` receives the public-health workspace plus staff invitation controls.
+- Anonymous patient entry remains public, but a staff account's signed-in navigation and account home do not expose patient-only tools.
 - Government information remains anonymous and aggregated; pharmacy users never see private self-use patient information; TB-centre staff independently confirm attendance only for their assigned centre.
 - Reminder email is optional and generic: it must not contain symptoms, referral identifiers, centre details, or diagnostic wording.
 
@@ -165,7 +170,8 @@ These are required for the hackathon prototype.
 - nationwide list of verified Bangladesh TB-evaluation facilities, with coverage across all eight divisions
 - distance or nearby-centre display
 - service type such as microscopy or GeneXpert when available
-- whole-Bangladesh map coverage and broad division-level location selection without collecting an exact home address or patient GPS point
+- whole-Bangladesh map coverage and broad division-level location selection for stored screening data
+- an explicit, optional browser GPS action may use the person's current coordinates transiently to draw a real road route and improve nearby-centre suggestions; exact GPS must never be written to screening, referral, account, analytics, logs, or hotspot records
 
 ### C. Referral System
 
@@ -207,6 +213,9 @@ Show only anonymous and aggregated information:
 - fraud alerts
 - geographic screening-risk map
 - hotspot warnings when one area shows unusually high potential-TB screening/referral activity
+- a real interactive Bangladesh basemap with privacy-safe area-level density overlays; it must never plot an individual's GPS position
+- percentages must describe the screened/referral cohort and display their denominator. They must never be labelled as population disease prevalence or confirmed disease occurrence.
+- the first release reports TB-related screening and referral signals only. Another disease category may appear only after its deterministic screening rules, bilingual safety copy, data provenance, aggregation threshold, and non-diagnostic label are added to this PRD and implemented.
 
 ### Hotspot Map Rule
 

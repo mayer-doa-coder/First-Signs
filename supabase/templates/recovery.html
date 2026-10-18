@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+  <body style="margin:0;padding:24px;background:#edf7f5;color:#173344;font-family:Merriweather,Georgia,serif;line-height:1.6">
+    <main style="max-width:560px;margin:0 auto;padding:28px;border-radius:24px;background:#ffffff">
+      <h1 style="margin-top:0">Reset your First Signs password</h1>
+      <p>Enter this six-digit code in First Signs:</p>
+      <p style="font-size:32px;font-weight:700;letter-spacing:8px">{{ .Token }}</p>
+      <p>The code expires according to your Supabase Auth settings. If you did not request this, you can ignore this email.</p>
+      <hr style="border:0;border-top:1px solid #c9dcd7">
+      <section lang="bn" style="font-family:'Noto Sans Bengali',sans-serif;font-weight:500">
+        <h2>ফার্স্ট সাইনস পাসওয়ার্ড পরিবর্তন করুন</h2>
+        <p>ফার্স্ট সাইনসে উপরের ছয় সংখ্যার কোডটি লিখুন। আপনি অনুরোধ না করে থাকলে এই ইমেইলটি উপেক্ষা করুন।</p>
+      </section>
+      <p><a href="{{ .ConfirmationURL }}">Use the secure recovery link instead / নিরাপদ রিকভারি লিংক ব্যবহার করুন</a></p>
+    </main>
+  </body>
+</html>

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createAdminClient, currentAuthUser, currentMemberships, isAccountAuthConfigured } from "@/lib/auth";
+import { createAdminClient, currentAuthUser, currentMemberships, isAccountAuthConfigured, primaryAccountRole, roleHome } from "@/lib/auth";
 
 export const runtime = "nodejs";
 const headers = { "cache-control": "no-store", "referrer-policy": "no-referrer" };
@@ -19,15 +19,19 @@ export async function GET() {
   const context = await accountContext();
   if ("error" in context) return context.error;
   const { user, admin } = context;
-  await admin.from("account_profiles").upsert({ user_id: user.id, email: user.email ?? "", updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+  const activeMemberships = await currentMemberships(user.id);
+  const primaryRole = primaryAccountRole(activeMemberships);
+  await admin.from("account_profiles").upsert({ user_id: user.id, email: user.email ?? "", account_role: primaryRole, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
   const [{ data: profile }, { data: link }, memberships] = await Promise.all([
-    admin.from("account_profiles").select("display_name, phone, email").eq("user_id", user.id).maybeSingle(),
+    admin.from("account_profiles").select("display_name, username, phone, email").eq("user_id", user.id).maybeSingle(),
     admin.from("account_patient_links").select("patient_id").eq("user_id", user.id).maybeSingle(),
-    currentMemberships(user.id),
+    Promise.resolve(activeMemberships),
   ]);
   return NextResponse.json({
-    user: { email: user.email ?? "", name: profile?.display_name ?? "", phone: profile?.phone ?? "", patientId: link?.patient_id ?? null },
+    user: { email: user.email ?? "", username: profile?.username ?? "", name: profile?.display_name ?? "", phone: profile?.phone ?? "", patientId: link?.patient_id ?? null },
     roles: memberships,
+    primaryRole,
+    workspaceHome: roleHome(primaryRole),
   }, { headers });
 }
 

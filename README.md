@@ -36,6 +36,21 @@ First Signs is a Bangladesh-wide, bilingual TB screening and care-navigation pro
 - `npm run test:safety` checks the fixed screening safety rules.
 - `npm run test:integration` checks the deterministic end-to-end demo journey.
 
+## Deploy on Render
+
+The included [`render.yaml`](render.yaml) creates a Node web service that builds with `npm ci && npm run build`, starts Next.js on Render's assigned port, and deploys after commits to the connected branch. It intentionally prompts for configuration rather than storing credentials in Git.
+
+Before enabling public sign-ups, set the Render environment variables from `.env.example`, using the same Supabase project that has the repository migrations applied. Set both `APP_URL` and `NEXT_PUBLIC_APP_URL` to the final HTTPS Render or custom-domain origin, then redeploy so the browser bundle receives the public value.
+
+In Supabase Auth, add these Redirect URLs:
+
+- `https://<your-render-host>/auth/callback`
+- `https://<your-custom-domain>/auth/callback` when using a custom domain
+
+Set the Auth Site URL to the final public origin. Replace the Reset Password email template with [`supabase/templates/recovery.html`](supabase/templates/recovery.html) so the six-digit recovery-code form works, and configure production SMTP before relying on confirmation, recovery, or invitation email delivery. Add the optional AI, reminder-email, Telegram, and HeAR variables only when those integrations are enabled; otherwise they stay disabled.
+
+Render deploys application code, not Supabase migrations. The current authentication migration has already been applied to the connected Supabase project. Apply and verify any future migration before deploying code that depends on it.
+
 ## Important health and privacy boundaries
 
 - English opens first; Bangla is available throughout the patient experience.

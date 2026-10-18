@@ -20,6 +20,13 @@ export async function POST(request: Request) {
   const origin = new URL(request.url).origin;
   const { data, error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, { redirectTo: `${origin}/auth/callback?next=/account` });
   if (inviteError || !data.user) return error("INVITATION_FAILED", 502);
+  const { error: profileError } = await admin.from("account_profiles").upsert({
+    user_id: data.user.id,
+    email,
+    account_role: role,
+    updated_at: new Date().toISOString(),
+  }, { onConflict: "user_id" });
+  if (profileError) return error("PROFILE_SAVE_FAILED", 502);
   const { error: membershipError } = await admin.from("staff_memberships").upsert({ user_id: data.user.id, role, pharmacy_id: pharmacyId, tb_center_id: tbCenterId, active: true }, { onConflict: "user_id,role,pharmacy_id,tb_center_id" });
   if (membershipError) return error("MEMBERSHIP_SAVE_FAILED", 502);
   return NextResponse.json({ invited: true }, { headers: { "cache-control": "no-store" } });

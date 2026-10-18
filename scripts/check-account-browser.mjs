@@ -13,13 +13,20 @@ try {
   const guestPage = await guest.newPage();
   await guestPage.goto(`${baseUrl}/account?mode=signup`, { waitUntil: "domcontentloaded" });
   await guestPage.getByText("Create your account", { exact: true }).waitFor();
-  if (!await guestPage.getByRole("button", { name: "Continue with email" }).isVisible()) throw new Error("The sign-up action is missing");
+  if (!await guestPage.getByLabel("Name", { exact: true }).isVisible()) throw new Error("The sign-up name field is missing");
+  if (!await guestPage.getByLabel("Username", { exact: true }).isVisible()) throw new Error("The unique username field is missing");
+  if (!await guestPage.getByLabel("Password", { exact: true }).isVisible()) throw new Error("The sign-up password field is missing");
+  if (!await guestPage.getByRole("button", { name: "Create account" }).isVisible()) throw new Error("The sign-up action is missing");
+  await guestPage.goto(`${baseUrl}/account?mode=forgot`, { waitUntil: "domcontentloaded" });
+  await guestPage.getByText("Reset your password", { exact: true }).waitFor();
+  if (!await guestPage.getByLabel("Email", { exact: true }).isVisible()) throw new Error("The recovery email field is missing");
+  if (!await guestPage.getByRole("button", { name: "Send code" }).isVisible()) throw new Error("The recovery-code action is missing");
   await guest.close();
 
   const member = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
   await member.route("**/api/account", (route) => {
     if (route.request().method() === "DELETE") return route.fulfill({ contentType: "application/json", body: JSON.stringify({ deleted: true }) });
-    return route.fulfill({ contentType: "application/json", body: JSON.stringify({ user: { email: "demo@example.com", name: "Demo User", phone: "", patientId: null }, roles: [] }) });
+    return route.fulfill({ contentType: "application/json", body: JSON.stringify({ user: { email: "demo@example.com", username: "demo.user", name: "Demo User", phone: "", patientId: null }, roles: [], primaryRole: "PATIENT", workspaceHome: "/account" }) });
   });
   await member.route("**/api/reminders", (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify({ reminders: [] }) }));
   const memberPage = await member.newPage();
@@ -31,7 +38,16 @@ try {
   const width = await memberPage.evaluate(() => ({ client: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth }));
   if (width.scroll > width.client + 1) throw new Error("Account controls overflow on mobile");
   await member.close();
-  console.log("Account sign-up, login, signed-in controls, delete confirmation, and mobile layout passed.");
+
+  const government = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
+  await government.route("**/api/account", (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify({ user: { email: "public-health@example.gov.bd", username: "gov.viewer", name: "Public Health Viewer", phone: "", patientId: null }, roles: [{ role: "GOVERNMENT_VIEWER", pharmacy_id: null, tb_center_id: null }], primaryRole: "GOVERNMENT_VIEWER", workspaceHome: "/dashboard" }) }));
+  const governmentPage = await government.newPage();
+  await governmentPage.goto(`${baseUrl}/account`, { waitUntil: "domcontentloaded" });
+  await governmentPage.getByText("Public Health Viewer", { exact: true }).waitFor();
+  if (!await governmentPage.getByText("Public-health dashboard", { exact: true }).isVisible()) throw new Error("The government workspace is missing");
+  if (await governmentPage.getByText("Patient tools", { exact: true }).count()) throw new Error("Patient tools leaked into the government role");
+  await government.close();
+  console.log("Account sign-up, recovery, patient controls, role isolation, delete confirmation, and mobile layout passed.");
 } finally {
   await browser.close();
 }

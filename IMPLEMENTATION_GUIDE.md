@@ -15,7 +15,7 @@ Run `npm run check:config` before starting the app or deploying it. It prints on
 - Feature-specific: `TB_CENTRE_STAFF_PIN` enables demo centre verification; `GEMINI_API_KEY` enables AI explanations; both `HEAR_SERVICE_URL` and `HEAR_SERVICE_TOKEN` enable real acoustic processing.
 - Telegram messaging is disabled until its variables and a public HTTPS callback URL are configured.
 
-Copy `.env.example` to `.env.local` for local development, replace placeholders, and restart Next.js after every environment-variable change. Keep `.env.local` out of Git. In hosted environments, add the same server-only values through the host's secret/configuration panel, then rebuild if `NEXT_PUBLIC_APP_URL` changes because Next.js embeds `NEXT_PUBLIC_` values into the browser bundle at build time.
+Copy `.env.example` to `.env.local` for local development, replace placeholders, and restart Next.js after every environment-variable change. Keep `.env.local` out of Git. In hosted environments, add the same server-only values through the host's secret/configuration panel, then rebuild if `NEXT_PUBLIC_APP_URL` changes because Next.js embeds `NEXT_PUBLIC_` values into the browser bundle at build time. For Render, use the committed `render.yaml`; it runs `npm ci && npm run build`, starts with Render's assigned `PORT`, and prompts for secret values instead of committing them.
 
 ## Language foundation — required from the start
 
@@ -24,11 +24,15 @@ Copy `.env.example` to `.env.local` for local development, replace placeholders,
 
 ## Optional accounts and role workspaces
 
-- Keep screening available without sign-in. Offer passwordless email access when a person wants to save their own My Care journey.
+- Keep screening available without sign-in. Offer Supabase email/password access when a person wants to save their own My Care journey.
+- Public sign-up collects display name, unique username, email, and password and always creates the `PATIENT` role. Resolve username login only in a trusted server route; never return the matched email to the browser.
 - Use invite-only memberships for pharmacy, TB-centre, government, and platform-admin workspaces; a public sign-up never selects a staff role.
+- Derive the effective interface from server-side membership data, with platform admin, government, TB-centre, and pharmacy roles taking precedence over the patient fallback. Staff navigation must show only the assigned workspace and account controls.
+- Configure the Supabase recovery email template to include `{{ .Token }}` so the six-digit recovery-code form works in hosted deployment. Keep the recovery link as an accessible fallback through `/auth/callback?next=/account?mode=reset`.
+- Store the application session policy in the browser: remembered sessions expire after 30 days; other sessions sign out after one hour without interaction. Supabase remains the source of truth for the authenticated session.
 - A patient may see only their own care journey. Pharmacy and government views must never show patient identity, symptoms, audio, or referral tokens.
 - Use `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` for browser authentication only. Keep Supabase secret keys and `RESEND_API_KEY` server-only.
-- Configure Supabase Auth with the deployed `/auth/callback` URL and Resend SMTP before sending passwordless links or invitations. Schedule a server-side POST to `/api/reminders/send` with `x-reminder-cron-secret`; it sends only the generic First Signs reminder text.
+- Configure Supabase Auth with the local and deployed `/auth/callback` URLs, the recovery-code email template, and production SMTP before sending confirmations, recovery codes, or invitations. Schedule a server-side POST to `/api/reminders/send` with `x-reminder-cron-secret`; it sends only the generic First Signs reminder text.
 
 ## Typography foundation — required from the start
 
@@ -238,6 +242,8 @@ Example:
 - Mymensingh
 
 Use only a broad division on the government dashboard, not an individual's exact house or GPS point. Keep the five earlier Khulna demo-area values readable only for existing seeded and persisted records.
+
+The centre map may request current browser GPS only after a person presses an explicit location button. Keep the coordinates in component memory only, use them for the current route and nearby ordering, and discard them when the page closes. Do not send exact coordinates to Supabase, application analytics, the government dashboard, or application logs. The selected broad division remains the only stored location.
 
 ## Step 12 — Create `referrals`
 
@@ -533,6 +539,7 @@ https://maplibre.org/maplibre-gl-js/docs/
 Show:
 
 - user's broad area,
+- the user's exact current position only after explicit permission and only for the current in-browser route,
 - recommended TB centre,
 - centre name,
 - service type.
@@ -651,7 +658,7 @@ After verification, `/care` should show:
 
 Refresh the saved referral from the backend when `/care` opens and when the person checks status. Explain bilingually that trained centre staff may review symptoms/history and choose an appropriate test such as sputum GeneXpert/another rapid molecular test, microscopy, chest X-ray, or another investigation based on available services and clinical need. Do not promise a particular test and do not display attendance confirmation as a diagnosis or test result.
 
-TB-centre staff authentication and centre-role authorization are not defined for this prototype. `/verify` is therefore a demo workspace only and must not be represented as production-ready staff access.
+Protect `/verify` with Supabase authentication and an active `TB_CENTRE_STAFF` or `PLATFORM_ADMIN` membership. Scope centre staff to their assigned centre, keep the existing server-only PIN as an additional prototype confirmation factor, and reject patient, pharmacy, and government accounts. Attendance confirmation remains a workflow event, never a diagnosis or test result.
 
 ---
 
@@ -670,7 +677,7 @@ Show:
 
 Self-use screenings should stay separate from pharmacy activity.
 
-Read these totals from aggregate database queries scoped to one pharmacy. Do not return patient details. This is a demo workspace until pharmacy staff authentication and role authorization are specified.
+Read these totals from aggregate database queries scoped to the signed-in staff member's active `PHARMACY_STAFF` membership. Do not accept a different pharmacy from a membership-scoped account, and do not return patient details. A `PLATFORM_ADMIN` may use the explicit cross-pharmacy oversight path; patient, government, and TB-centre accounts must be rejected.
 
 ## Step 37 — Add simulated rewards
 

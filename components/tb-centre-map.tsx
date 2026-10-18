@@ -6,7 +6,7 @@ import type { GeoJSONSource, LngLatLike, Map as MapLibreMap, Marker as MapLibreM
 import { BilingualText, useLanguage, type Copy } from "@/components/language";
 import { Icon } from "@/components/icons";
 import type { BroadArea } from "@/lib/broad-areas";
-import type { Coordinates, RankedCentre, TbCentre } from "@/lib/tb-centres";
+import { distanceKm, type Coordinates, type RankedCentre, type TbCentre } from "@/lib/tb-centres";
 
 /**
  * Free, key-free OpenStreetMap-based vector tiles (no registration, no usage
@@ -30,6 +30,7 @@ const LEGACY_AREA_RADIUS_METERS = 1_500;
 
 type MapStatus = "checking" | "ready" | "unavailable";
 type RouteStatus = "idle" | "loading" | "ready" | "unavailable";
+type LocationStatus = "idle" | "requesting" | "ready" | "denied";
 
 function supportsWebGL() {
   try {
@@ -139,6 +140,27 @@ export function TbCentreMap({
   const [mapStatus, setMapStatus] = useState<MapStatus>(canUseWebGL ? "checking" : "unavailable");
   const [routeStatus, setRouteStatus] = useState<RouteStatus>("idle");
   const [routeDistanceKm, setRouteDistanceKm] = useState<number | null>(null);
+  const [currentLocation, setCurrentLocation] = useState<Coordinates | null>(null);
+  const [locationStatus, setLocationStatus] = useState<LocationStatus>("idle");
+  const routeOrigin = currentLocation ?? area;
+
+  function requestCurrentLocation() {
+    if (!navigator.geolocation) { setLocationStatus("denied"); return; }
+    setLocationStatus("requesting");
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const location = { latitude: position.coords.latitude, longitude: position.coords.longitude };
+        setCurrentLocation(location);
+        setLocationStatus("ready");
+        const nearestCentre = [centre, ...alternates.map((entry) => entry.centre)]
+          .map((candidate) => ({ candidate, distance: distanceKm(location, candidate) }))
+          .sort((left, right) => left.distance - right.distance)[0]?.candidate;
+        if (nearestCentre && nearestCentre.id !== centre.id) onSelectCentreRef.current(nearestCentre.id);
+      },
+      () => setLocationStatus("denied"),
+      { enableHighAccuracy: false, timeout: 10_000, maximumAge: 5 * 60_000 },
+    );
+  }
 
   // `onSelectCentre` is a new function on every parent render; keeping only
   // it behind a ref (updated here, never during render) means the marker
@@ -224,7 +246,7 @@ export function TbCentreMap({
       markersRef.current = [];
 
       const bounds = new maplibregl.LngLatBounds();
-      bounds.extend(toLngLat(area));
+      bounds.extend(toLngLat(routeOrigin));
       bounds.extend(toLngLat(centre));
 
       const areaMarker = new maplibregl.Marker({ color: "#277f80" })
@@ -243,6 +265,17 @@ export function TbCentreMap({
         )
         .addTo(map);
       markersRef.current.push(areaMarker);
+
+      if (currentLocation) {
+        const locationMarker = new maplibregl.Marker({ color: "#17394c" })
+          .setLngLat(toLngLat(currentLocation))
+          .setPopup(new maplibregl.Popup({ offset: 20 }).setDOMContent(popupNode({
+            title: language === "bn" ? "আপনার বর্তমান অবস্থান" : "Your current location",
+            lines: [language === "bn" ? "শুধু এই পথ দেখানোর জন্য ব্যবহার করা হচ্ছে; সংরক্ষণ করা হচ্ছে না।" : "Used only for this route; it is not saved."],
+          })))
+          .addTo(map);
+        markersRef.current.push(locationMarker);
+      }
 
       const centreMarker = new maplibregl.Marker({ color: "#176568" })
         .setLngLat(toLngLat(centre))
@@ -296,7 +329,7 @@ export function TbCentreMap({
       if (map.getSource("route-line")) map.removeSource("route-line");
       map.addSource("route-line", {
         type: "geojson",
-        data: { type: "Feature", geometry: straightLine(area, centre), properties: {} },
+        data: { type: "Feature", geometry: straightLine(routeOrigin, centre), properties: {} },
       });
       map.addLayer({
         id: "route-line",
@@ -312,7 +345,7 @@ export function TbCentreMap({
       setRouteDistanceKm(null);
       const timeout = window.setTimeout(() => abortController.abort(), ROUTE_FETCH_TIMEOUT_MS);
 
-      fetchDrivingRoute(area, centre, abortController.signal)
+      fetchDrivingRoute(routeOrigin, centre, abortController.signal)
         .then((route) => {
           window.clearTimeout(timeout);
           if (cancelled || map !== mapRef.current) return;
@@ -332,25 +365,37 @@ export function TbCentreMap({
       cancelled = true;
       abortController.abort();
     };
-  }, [mapStatus, area, areaRadiusMeters, centre, alternates, language]);
+  }, [mapStatus, area, areaRadiusMeters, centre, alternates, language, currentLocation, routeOrigin]);
 
-  const directionsUrl = googleMapsDirectionsUrl(area, centre);
+  const directionsUrl = googleMapsDirectionsUrl(routeOrigin, centre);
   const directionsLabel: Copy = { bn: "Google মানচিত্রে দিকনির্দেশ দেখুন", en: "Open directions in Google Maps" };
 
   return (
     <div className="centre-map-wrap">
-      <div className="centre-map-canvas" ref={containerRef} role="img" aria-label={`${area.label[language]} থেকে ${centre.name[language]} পর্যন্ত মানচিত্র / Map from ${area.label.en} to ${centre.name.en}`} />
-      {mapStatus !== "ready" && (
-        <div className="centre-map-fallback" role="status">
-          <Icon name="location" />
-          <p>
-            <BilingualText copy={mapStatus === "checking"
-              ? { bn: "মানচিত্র লোড হচ্ছে…", en: "Loading the map…" }
-              : { bn: "ইন্টারেক্টিভ মানচিত্র এই মুহূর্তে দেখানো যাচ্ছে না। নিচের তথ্য ও দিকনির্দেশ লিংক ব্যবহার করুন।", en: "The interactive map is not available right now. Use the information and directions link below." }} />
-          </p>
-        </div>
-      )}
+      <div className="centre-map-surface">
+        <div className="centre-map-canvas" ref={containerRef} role="img" aria-label={`${area.label[language]} থেকে ${centre.name[language]} পর্যন্ত মানচিত্র / Map from ${area.label.en} to ${centre.name.en}`} />
+        {mapStatus !== "ready" && (
+          <div className="centre-map-fallback" role="status">
+            <Icon name="location" />
+            <p>
+              <BilingualText copy={mapStatus === "checking"
+                ? { bn: "মানচিত্র লোড হচ্ছে…", en: "Loading the map…" }
+                : { bn: "ইন্টারেক্টিভ মানচিত্র এই মুহূর্তে দেখানো যাচ্ছে না। নিচের তথ্য ও দিকনির্দেশ লিংক ব্যবহার করুন।", en: "The interactive map is not available right now. Use the information and directions link below." }} />
+            </p>
+          </div>
+        )}
+      </div>
       <div className="centre-map-footer">
+        <div className="centre-map-route-controls">
+          <button className="button button-secondary" type="button" onClick={requestCurrentLocation} disabled={locationStatus === "requesting"}>
+            <Icon name="location" />
+            <BilingualText copy={locationStatus === "requesting" ? { bn: "অবস্থান নেওয়া হচ্ছে…", en: "Getting location…" } : locationStatus === "ready" ? { bn: "বর্তমান অবস্থান ব্যবহার হচ্ছে", en: "Using current location" } : { bn: "আমার বর্তমান অবস্থান ব্যবহার করুন", en: "Use my current location" }} />
+          </button>
+          <p className="centre-map-route-note">
+            <BilingualText copy={{ bn: "সঠিক GPS অবস্থান শুধু এই পথের জন্য ব্যবহার হয় এবং সংরক্ষণ করা হয় না।", en: "Exact GPS is used only for this route and is never stored." }} />
+          </p>
+          {locationStatus === "denied" && <p className="centre-map-route-note" role="status"><BilingualText copy={{ bn: "অবস্থানের অনুমতি পাওয়া যায়নি। বিস্তৃত এলাকা দিয়ে পথ দেখানো হচ্ছে।", en: "Location permission was unavailable. The route uses your broad area instead." }} /></p>}
+        </div>
         <p className="centre-map-route-note">
           {routeStatus === "ready" && routeDistanceKm !== null ? (
             <BilingualText copy={{

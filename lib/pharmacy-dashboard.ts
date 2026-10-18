@@ -18,6 +18,7 @@ export type PharmacyDashboardData = {
   reusedAudioWarnings: number;
   activityRequiresReview: boolean;
   lastActivityAt: string | null;
+  membershipScoped?: boolean;
 };
 
 export async function fetchPharmacyDashboard(pharmacyId: string): Promise<PharmacyDashboardData> {

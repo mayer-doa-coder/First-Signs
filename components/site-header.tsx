@@ -7,7 +7,7 @@ import { BilingualText, LanguageSwitcher, useLanguage, type Copy } from "@/compo
 import { Icon, type IconName } from "@/components/icons";
 import { createBrowserAuthClient } from "@/lib/auth-browser";
 
-const navigation: { href: string; label: Copy; icon: IconName }[] = [
+const patientNavigation: { href: string; label: Copy; icon: IconName }[] = [
   { href: "/", label: { bn: "হোম", en: "Home" }, icon: "home" },
   { href: "/screen?source=self", label: { bn: "স্ক্রিনিং", en: "Screening" }, icon: "screen" },
   { href: "/care", label: { bn: "আমার সেবা", en: "My care" }, icon: "care" },
@@ -16,19 +16,37 @@ const navigation: { href: string; label: Copy; icon: IconName }[] = [
   { href: "/community", label: { bn: "কমিউনিটি", en: "Community" }, icon: "community" },
 ];
 
+type AccountRole = "PATIENT" | "PHARMACY_STAFF" | "TB_CENTRE_STAFF" | "GOVERNMENT_VIEWER" | "PLATFORM_ADMIN";
+
+function navigationFor(role: AccountRole | null) {
+  if (role === "PHARMACY_STAFF") return [{ href: "/pharmacy", label: { bn: "ফার্মেসি", en: "Pharmacy" }, icon: "pharmacy" as IconName }];
+  if (role === "TB_CENTRE_STAFF") return [{ href: "/verify", label: { bn: "যাচাই", en: "Verify" }, icon: "check" as IconName }];
+  if (role === "GOVERNMENT_VIEWER" || role === "PLATFORM_ADMIN") return [{ href: "/dashboard", label: { bn: "ড্যাশবোর্ড", en: "Dashboard" }, icon: "dashboard" as IconName }];
+  return patientNavigation;
+}
+
 export function SiteHeader() {
   const pathname = usePathname();
   const { language } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
   const [signedIn, setSignedIn] = useState(false);
+  const [role, setRole] = useState<AccountRole | null>(null);
 
   useEffect(() => {
     const client = createBrowserAuthClient();
     if (!client) return;
-    void client.auth.getUser().then(({ data }) => setSignedIn(Boolean(data.user)));
-    const { data: listener } = client.auth.onAuthStateChange((_event, session) => setSignedIn(Boolean(session?.user)));
+    const refreshAccount = async (isSignedIn: boolean) => {
+      setSignedIn(isSignedIn);
+      if (!isSignedIn) { setRole(null); return; }
+      const response = await fetch("/api/account", { cache: "no-store" });
+      if (response.ok) setRole(((await response.json()) as { primaryRole: AccountRole }).primaryRole);
+    };
+    void client.auth.getUser().then(({ data }) => void refreshAccount(Boolean(data.user)));
+    const { data: listener } = client.auth.onAuthStateChange((_event, session) => void refreshAccount(Boolean(session?.user)));
     return () => listener.subscription.unsubscribe();
   }, []);
+
+  const navigation = navigationFor(role);
 
   const accountActions = (
     <div className="header-account-actions">

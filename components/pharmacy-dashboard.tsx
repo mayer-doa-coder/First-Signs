@@ -7,6 +7,7 @@ import { Icon } from "@/components/icons";
 import { ActionLink, ClayCard, MetricCard, SectionHeading, StatusPill } from "@/components/ui";
 import { fetchPharmacyDashboard, type PharmacyDashboardData } from "@/lib/pharmacy-dashboard";
 import { demoPharmacies, getPharmacyScreeningPath } from "@/lib/pharmacies";
+import { PharmacyQrCard } from "@/components/pharmacy-qr-card";
 
 const REFRESH_INTERVAL_MS = 4_000;
 
@@ -22,6 +23,7 @@ export function PharmacyDashboard({ initialPharmacyId }: { initialPharmacyId: st
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(false);
+  const [qrBaseUrl, setQrBaseUrl] = useState("");
   const requestSequence = useRef(0);
 
   const loadDashboard = useCallback(async (quiet = false) => {
@@ -31,6 +33,10 @@ export function PharmacyDashboard({ initialPharmacyId }: { initialPharmacyId: st
     try {
       const result = await fetchPharmacyDashboard(pharmacyId);
       if (requestNumber !== requestSequence.current) return;
+      if (result.membershipScoped && result.pharmacyId !== pharmacyId) {
+        setPharmacyId(result.pharmacyId);
+        router.replace(`/pharmacy?pharmacy=${encodeURIComponent(result.pharmacyId)}`, { scroll: false });
+      }
       setDashboard(result);
       setError(false);
     } catch {
@@ -42,15 +48,17 @@ export function PharmacyDashboard({ initialPharmacyId }: { initialPharmacyId: st
         setRefreshing(false);
       }
     }
-  }, [pharmacyId]);
+  }, [pharmacyId, router]);
 
   useEffect(() => {
+    const originTimer = window.setTimeout(() => setQrBaseUrl(window.location.origin), 0);
     const firstLoad = window.setTimeout(() => void loadDashboard(), 0);
     const interval = window.setInterval(() => {
       if (document.visibilityState === "visible") void loadDashboard(true);
     }, REFRESH_INTERVAL_MS);
     return () => {
       window.clearTimeout(firstLoad);
+      window.clearTimeout(originTimer);
       window.clearInterval(interval);
     };
   }, [loadDashboard]);
@@ -64,19 +72,21 @@ export function PharmacyDashboard({ initialPharmacyId }: { initialPharmacyId: st
   }
 
   const localPharmacy = demoPharmacies.find((item) => item.id === pharmacyId);
+  const qrPharmacy = dashboard ? localPharmacy ?? {
+    id: dashboard.pharmacyId,
+    name: { bn: dashboard.pharmacyName, en: dashboard.pharmacyName },
+    area: { bn: dashboard.pharmacyArea, en: dashboard.pharmacyArea },
+    active: true,
+  } : null;
 
   return (
     <div className="pharmacy-dashboard-live" data-pharmacy-dashboard={pharmacyId}>
       <ClayCard className="pharmacy-dashboard-toolbar" as="section">
         <div>
-          <label htmlFor="pharmacy-dashboard-select"><BilingualText copy={{ bn: "ফার্মেসি", en: "Pharmacy" }} /></label>
-          <select id="pharmacy-dashboard-select" value={pharmacyId} onChange={(event) => choosePharmacy(event.target.value)}>
-            {demoPharmacies.map((pharmacy) => (
-              <option key={pharmacy.id} value={pharmacy.id} lang={language}>
-                {pharmacy.name[language]} — {pharmacy.area[language]}
-              </option>
-            ))}
-          </select>
+          <label htmlFor={dashboard?.membershipScoped ? undefined : "pharmacy-dashboard-select"}><BilingualText copy={{ bn: "ফার্মেসি", en: "Pharmacy" }} /></label>
+          {dashboard?.membershipScoped ? <strong><BilingualText copy={localPharmacy?.name ?? { bn: dashboard.pharmacyName, en: dashboard.pharmacyName }} /></strong> : <select id="pharmacy-dashboard-select" value={pharmacyId} onChange={(event) => choosePharmacy(event.target.value)}>
+            {demoPharmacies.map((pharmacy) => <option key={pharmacy.id} value={pharmacy.id} lang={language}>{pharmacy.name[language]} — {pharmacy.area[language]}</option>)}
+          </select>}
         </div>
         <button className="button button-secondary" type="button" onClick={() => void loadDashboard(true)} disabled={loading || refreshing}>
           <Icon name="trend" />
@@ -100,6 +110,8 @@ export function PharmacyDashboard({ initialPharmacyId }: { initialPharmacyId: st
           <div className="selected-pharmacy-heading">
             <div><span className="mini-label"><BilingualText copy={{ bn: "বর্তমান ফার্মেসি", en: "Current pharmacy" }} /></span><h2><BilingualText copy={localPharmacy?.name ?? { bn: dashboard.pharmacyName, en: dashboard.pharmacyName }} /></h2><p><BilingualText copy={localPharmacy?.area ?? { bn: dashboard.pharmacyArea, en: dashboard.pharmacyArea }} /></p></div>
           </div>
+
+          {qrPharmacy && qrBaseUrl && <PharmacyQrCard pharmacy={qrPharmacy} qrBaseUrl={qrBaseUrl} />}
 
           <div className="metrics-grid">
             <MetricCard label={{ bn: "সহায়তাপ্রাপ্ত স্ক্রিনিং", en: "Assisted screenings" }} value={count(dashboard.assistedScreenings)} icon="screen" note={{ bn: "শুধু এই ফার্মেসির উৎস", en: "This pharmacy source only" }} />

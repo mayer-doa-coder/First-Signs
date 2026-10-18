@@ -671,6 +671,7 @@ p { color: var(--color-ink-soft); }
 .centre-rank-details small { color: var(--color-ink-muted); }
 
 .centre-map-wrap { display: grid; gap: var(--space-3); }
+.centre-map-surface { position: relative; }
 .centre-map-canvas {
   position: relative;
   width: 100%;
@@ -695,6 +696,8 @@ p { color: var(--color-ink-soft); }
 .centre-map-fallback svg { flex: 0 0 auto; color: var(--color-primary-hover); }
 .centre-map-fallback p { margin: 0; font-weight: 700; }
 .centre-map-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.centre-map-route-controls { min-width: min(100%, 24rem); display: grid; gap: .55rem; }
+.centre-map-route-controls .button { justify-self: start; }
 .centre-map-route-note { margin: 0; color: var(--color-ink-muted); font-size: 0.88rem; }
 .centre-map-footer .button { flex: 0 0 auto; }
 
@@ -916,6 +919,8 @@ tbody tr:last-child td { border-bottom: 0; }
 .demo-rule-note small { color: var(--color-ink-muted); font-weight: 700; }
 .government-map-layout { display: grid; gap: var(--space-5); min-width: 0; margin-top: var(--space-5); }
 .government-map-wrap { display: grid; gap: var(--space-4); min-width: 0; }
+.government-map-real { position: relative; }
+.government-map-loading { margin-top: -1rem; padding: .75rem 1rem; color: var(--color-ink-soft); border: 1px solid #b8d0ca; border-radius: var(--radius-md); background: var(--color-surface-strong); font-weight: 700; }
 .government-map-canvas { width: 100%; height: clamp(20rem, 58vw, 28rem); overflow: hidden; border: 1px solid #9fc9bf; border-radius: var(--radius-lg); background: #dcece8; box-shadow: var(--shadow-pressed); }
 .government-map-schematic { position: relative; isolation: isolate; background: radial-gradient(circle at 30% 26%, rgba(255, 255, 255, .8), transparent 28%), linear-gradient(145deg, #eaf6f2, #d2e8e2); }
 .government-map-grid { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; color: #8eb9af; pointer-events: none; }
@@ -1206,6 +1211,11 @@ body {
 .account-auth-card form, .account-form { display: grid; gap: var(--space-3); margin-top: var(--space-4); }
 .account-auth-card label, .account-form label { display: grid; gap: .45rem; font-weight: 700; }
 .account-auth-card input, .account-form input, .account-form select, .account-form textarea { width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; min-height: 3rem; padding: .65rem .8rem; border: 1px solid #acc6d2; border-radius: .75rem; color: var(--color-ink); background: white; font: inherit; }
+.account-auth-card small { color: var(--color-ink-muted); line-height: 1.55; }
+.account-auth-card .check-row { min-height: 2.75rem; display: flex; align-items: center; gap: .7rem; }
+.account-auth-card .check-row input, .account-form .check-row input { width: 1.2rem; min-height: 1.2rem; flex: 0 0 auto; }
+.account-text-link { min-height: 2.75rem; display: inline-flex; align-items: center; margin-top: var(--space-3); color: var(--color-primary-hover); font-weight: 800; }
+.account-action-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr)); gap: var(--space-3); }
 .account-form textarea { min-height: 7rem; resize: vertical; }
 .account-form .check-row { display: flex; align-items: center; }
 .account-form .check-row input { min-height: auto; }

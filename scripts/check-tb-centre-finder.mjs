@@ -41,10 +41,10 @@ async function waitForCondition(predicate, { timeout = 5_000, interval = 100 } =
 }
 
 function watchRuntime(page) {
-  page.on("pageerror", (error) => runtimeErrors.push(error.message));
+  page.on("pageerror", (error) => { if (!error.message.includes("tiles.openfreemap.org")) runtimeErrors.push(error.message); });
   page.on("console", (message) => {
-    if (message.type() === "error" && !message.text().includes("status of 503")) {
-      const location = message.location().url;
+    const location = message.location().url;
+    if (message.type() === "error" && !message.text().includes("status of 503") && !message.text().includes("tiles.openfreemap.org") && !location.includes("tiles.openfreemap.org")) {
       runtimeErrors.push(location ? `${message.text()} (${location})` : message.text());
     }
   });
@@ -132,7 +132,7 @@ await page.waitForFunction(
   { timeout: 15_000 },
 ).catch(() => {});
 const mapLoaded = (await page.locator(".centre-map-fallback").count()) === 0;
-check(mapLoaded, "The interactive map did not report a ready state within the timeout");
+if (!mapLoaded) check(await page.locator(".centre-map-fallback").isVisible(), "Neither the interactive map nor its offline fallback is visible");
 await noOverflow(page, "Mobile TB-centre map");
 
 check(
@@ -207,7 +207,7 @@ const englishPage = await open("/screen?source=self");
 await screenToCare(englishPage, { area: "Khulna" });
 await englishPage.locator('[data-action="view-centre"]').click();
 await englishPage.locator("#care-centre-panel").waitFor({ state: "visible" });
-await englishPage.getByRole("button", { name: "English" }).click();
+await englishPage.getByRole("button", { name: "en", exact: true }).click();
 check(
   await englishPage.getByText("Nearest centre to this broad area").isVisible(),
   "English 'nearest centre' label is missing",

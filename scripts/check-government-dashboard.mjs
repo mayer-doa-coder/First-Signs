@@ -67,7 +67,7 @@ check((await page.locator(".privacy-banner").textContent())?.includes("ফোন
 check((await page.locator("[data-patient-id], .patient-id-card, audio").count()) === 0, "Government dashboard exposed a patient or audio field");
 check((await page.locator(".government-fraud-card").textContent())?.includes("সম্ভাব্য পুনর্ব্যবহৃত অডিও"), "Anonymous fraud-review summary is missing");
 check(!(await page.locator(".government-fraud-card").textContent())?.match(/JVH-DEMO-|DEMO-KHL-|[0-9a-f]{64}/), "Government review summary exposed an identifier or audio hash");
-check(await page.getByText("ডেমো নিয়ম", { exact: true }).isVisible(), "Bangla demo hotspot rule is missing");
+check(await page.getByText("পর্যালোচনার নিয়ম", { exact: true }).isVisible(), "Bangla aggregate review rule is missing");
 check(await page.getByText("সম্ভাব্য টিবি-সংক্রান্ত স্ক্রিনিং কার্যক্রম বেশি — তদন্ত করুন", { exact: true }).isVisible(), "Red investigation signal is missing or incorrectly worded");
 check(await page.getByText("এলাকাটি পর্যালোচনা করুন", { exact: true }).isVisible(), "Red-area action panel is missing");
 check(await page.getByText("মোবাইল স্ক্রিনিং/পরীক্ষা বিবেচনা করুন", { exact: true }).isVisible(), "Mobile screening action is missing");
@@ -75,23 +75,23 @@ check((await page.locator(".government-map-privacy-note").textContent())?.includ
 check((await page.locator(".dashboard-demo-seed-note").textContent())?.includes("২১টি কৃত্রিম স্ক্রিনিং"), "Prepared demo records are not explicitly labelled");
 check((await page.locator(".hotspot-area-button").count()) === 3, "Area selector does not contain the expected privacy-safe areas");
 check(await page.locator("[data-local-government-map]").isVisible(), "Local broad-area map is not visible");
-check((await page.locator("[data-hotspot-marker]").count()) === 3, "Local broad-area map markers are missing");
-check(externalRequests.length === 0, `Dashboard made unexpected external requests: ${externalRequests.join(", ")}`);
+check(await page.locator(".government-map-real").isVisible(), "The real MapLibre government map surface is missing");
+check(externalRequests.every((url) => url.startsWith("https://tiles.openfreemap.org/")), `Dashboard made unexpected external requests: ${externalRequests.join(", ")}`);
 check((await page.locator("text=Confirmed TB outbreak").count()) === 0, "Dashboard uses prohibited confirmed-outbreak wording");
 const banglaFont = await page.locator("#page-title span").evaluate((element) => getComputedStyle(element).fontFamily);
 check(banglaFont.includes("Noto Sans Bengali"), `Bangla dashboard font is incorrect: ${banglaFont}`);
 
-await page.locator(".hotspot-area-selector").getByRole("button", { name: /খালিশপুর.*নজরে রাখুন/ }).click();
+await page.locator(".hotspot-area-button").nth(1).click();
 check((await page.locator(".red-area-actions").count()) === 0, "Red action panel remained visible for a watch area");
-await page.locator(".hotspot-area-selector").getByRole("button", { name: /দৌলতপুর.*লাল সতর্কতা/ }).click();
+await page.locator(".hotspot-area-button").nth(2).click();
 check(await page.locator(".red-area-actions").isVisible(), "Selecting a red map area did not show the action panel");
 
-await page.getByRole("button", { name: "এখন হালনাগাদ করুন" }).click();
+await page.locator(".government-dashboard-toolbar button").click();
 await page.waitForFunction(() => document.querySelectorAll(".metric-value")[4]?.textContent === "৪");
 values = await page.locator(".metric-value").allTextContents();
 check(values[4] === "৪" && values[5] === "৬৬.৭%", "Manual refresh did not update completed totals and rate");
 
-await page.getByRole("button", { name: "English" }).click();
+await page.getByRole("button", { name: "en", exact: true }).click();
 values = await page.locator(".metric-value").allTextContents();
 check(values.join("|") === "12|7|5|6|4|66.7%", `English totals are incorrect: ${values.join("|")}`);
 check(await page.getByText("Anonymous programme overview").isVisible(), "English dashboard title is unavailable");
@@ -128,7 +128,7 @@ errorPage.setDefaultNavigationTimeout(30_000);
 await errorPage.goto(new URL("/dashboard", baseUrl).toString(), { waitUntil: "domcontentloaded" });
 await errorPage.locator(".dashboard-error-card").waitFor();
 check(await errorPage.locator(".dashboard-error-card").isVisible(), "Dashboard failure state is not visible");
-await errorPage.getByRole("button", { name: "English" }).click();
+await errorPage.getByRole("button", { name: "en", exact: true }).click();
 check(await errorPage.getByText("Public-health totals could not be loaded").isVisible(), "English failure state is unavailable");
 
 await errorContext.close();

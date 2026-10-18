@@ -4,7 +4,8 @@ import { createClient, type User } from "@supabase/supabase-js";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-type Role = "PHARMACY_STAFF" | "TB_CENTRE_STAFF" | "GOVERNMENT_VIEWER" | "PLATFORM_ADMIN";
+export type AccountRole = "PATIENT" | "PHARMACY_STAFF" | "TB_CENTRE_STAFF" | "GOVERNMENT_VIEWER" | "PLATFORM_ADMIN";
+type Role = Exclude<AccountRole, "PATIENT">;
 
 function publicConfig() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
@@ -56,6 +57,22 @@ export async function hasRole(userId: string, role: Role, scopeId?: string) {
   const memberships = await currentMemberships(userId);
   return memberships.some((membership) => membership.role === "PLATFORM_ADMIN"
     || (membership.role === role && (!scopeId || membership.pharmacy_id === scopeId || membership.tb_center_id === scopeId)));
+}
+
+export function primaryAccountRole(memberships: { role: Role }[]): AccountRole {
+  const roles = new Set(memberships.map((membership) => membership.role));
+  if (roles.has("PLATFORM_ADMIN")) return "PLATFORM_ADMIN";
+  if (roles.has("GOVERNMENT_VIEWER")) return "GOVERNMENT_VIEWER";
+  if (roles.has("TB_CENTRE_STAFF")) return "TB_CENTRE_STAFF";
+  if (roles.has("PHARMACY_STAFF")) return "PHARMACY_STAFF";
+  return "PATIENT";
+}
+
+export function roleHome(role: AccountRole) {
+  if (role === "PHARMACY_STAFF") return "/pharmacy";
+  if (role === "TB_CENTRE_STAFF") return "/verify";
+  if (role === "GOVERNMENT_VIEWER" || role === "PLATFORM_ADMIN") return "/dashboard";
+  return "/account";
 }
 
 export type StaffRole = Role;

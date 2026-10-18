@@ -5,6 +5,7 @@ import { MotionShell } from "@/components/motion-shell";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { AssistantLauncher } from "@/components/assistant-launcher";
+import { SessionPolicyGuard } from "@/components/session-policy-guard";
 import "./globals.css";
 
 const notoSansBengali = Noto_Sans_Bengali({
@@ -41,6 +42,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <span className="healthcare-background-system" />
           </div>
           <SiteHeader />
+          <SessionPolicyGuard />
           <MotionShell>{children}</MotionShell>
           <SiteFooter />
           <AssistantLauncher />

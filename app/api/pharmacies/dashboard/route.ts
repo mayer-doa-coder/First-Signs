@@ -81,12 +81,14 @@ function toDashboard(row: Record<string, unknown>): PharmacyDashboardData | null
 
 export async function GET(request: Request) {
   let pharmacyId = new URL(request.url).searchParams.get("pharmacyId")?.trim().toUpperCase() ?? "";
+  let membershipScoped = false;
   if (isAccountAuthConfigured()) {
     const user = await currentAuthUser();
     if (!user) return errorResponse("AUTH_REQUIRED", 401);
     const membership = (await currentMemberships(user.id)).find((candidate) => candidate.role === "PHARMACY_STAFF" && candidate.pharmacy_id);
     if (!membership?.pharmacy_id) return errorResponse("PHARMACY_ACCESS_DENIED", 403);
     pharmacyId = membership.pharmacy_id;
+    membershipScoped = true;
   }
   if (!getActivePharmacy(pharmacyId)) return errorResponse("PHARMACY_NOT_FOUND", 404);
   if (!isReferralDatabaseConfigured()) return errorResponse("PHARMACY_BACKEND_NOT_CONFIGURED", 503);
@@ -97,7 +99,7 @@ export async function GET(request: Request) {
     if (!dashboard || dashboard.pharmacyId !== pharmacyId) {
       return errorResponse("PHARMACY_DASHBOARD_NOT_FOUND", 404);
     }
-    return NextResponse.json({ dashboard }, { headers: responseHeaders });
+    return NextResponse.json({ dashboard: { ...dashboard, membershipScoped } }, { headers: responseHeaders });
   } catch {
     return errorResponse("PHARMACY_DASHBOARD_FETCH_FAILED", 502);
   }
