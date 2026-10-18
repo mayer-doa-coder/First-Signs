@@ -150,6 +150,8 @@ try {
     "test:integration",
     "test:ai-browser",
     "test:ai-live",
+    "test:assistant-browser",
+    "test:medicines-browser",
     "test:hear-browser"
   )
   foreach ($browserTest in $browserTests) {

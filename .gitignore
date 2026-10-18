@@ -16,6 +16,7 @@
 
 # Local Codex/agent skills installed for this workspace
 /.agents/
+/skills-lock.json
 
 # misc
 .DS_Store
