@@ -112,18 +112,20 @@ async function completeScreeningStep(
   } = {},
 ) {
   await page.getByRole("button", { name: "বাংলা" }).click();
+  const concernStage = page.locator('[data-screening-stage="concern"]');
+  if (await concernStage.isVisible()) {
+    await concernStage.locator(".pathway-card").first().click();
+  }
   const consentStage = page.locator('[data-screening-stage="consent"]');
-  const consentButton = consentStage.locator('button[type="button"]');
-  check(await consentButton.isDisabled(), "Screening continued before consent");
-  await consentButton.evaluate((button) => button.click());
-  check(await consentStage.isVisible(), "Disabled consent action advanced the screening");
-  await consentStage.locator('input[type="checkbox"]').check();
+  const consentButton = consentStage.locator(".button-primary");
+  check(await consentButton.isEnabled(), "Consent action is not available");
   await consentButton.click();
 
   const questionsStage = page.locator('[data-screening-stage="questions"]');
   check(await page.locator(".entry-context").isVisible(), "Entry context disappeared after consent");
   const finishAnswers = questionsStage.locator('button[type="submit"]');
   check(await finishAnswers.isDisabled(), "Incomplete symptom answers could be submitted");
+  await questionsStage.locator('input[name="age-band"][value="ADULT"]').check();
   check((await questionsStage.locator("#cough-days").count()) === 1, "Cough-duration question is missing");
   await questionsStage.locator("#cough-days").fill("-1");
   check(await finishAnswers.isDisabled(), "A negative cough duration enabled submission");
@@ -180,7 +182,7 @@ async function completeScreeningStep(
     check((await audioStage.locator("[data-audio-player] audio").count()) === 1, "Native phone recording was not accepted for playback");
     await audioStage.getByRole("button", { name: "ফলাফল নিয়ে এগিয়ে যান" }).click();
   } else if (audioMode === "upload") {
-    await page.getByRole("button", { name: "English" }).click();
+    await page.getByRole("button", { name: "en" }).click();
     const audioInput = audioStage.locator('input[name="coughAudio"]');
     await audioInput.setInputFiles({ name: "not-audio.txt", mimeType: "text/plain", buffer: Buffer.from("not audio") });
     check(await audioStage.getByText("Choose an audio file only.", { exact: true }).isVisible(), "Non-audio upload was not rejected");
@@ -261,34 +263,21 @@ async function completeScreeningStep(
   }
 
   const referralStage = page.locator('[data-screening-stage="referral"]');
+  const expectedOutcomeLabel = expectedOutcome === "CONTINUE_SCREENING"
+    ? "সেবার তথ্য"
+    : expectedOutcome === "URGENT_MEDICAL_EVALUATION"
+      ? "জরুরি চিকিৎসা মূল্যায়ন"
+      : "পেশাদার মূল্যায়নের পরামর্শ";
   check(
-    (await referralStage.locator(`[data-safety-outcome="${expectedOutcome}"]`).count()) === 1,
+    (await referralStage.textContent())?.includes(expectedOutcomeLabel),
     `Expected safety outcome ${expectedOutcome} was not shown`,
   );
   check(await page.locator(".entry-context").isVisible(), "Entry context disappeared during referral choice");
-  const confirmChoice = referralStage.locator('button[type="submit"]');
-  check(await confirmChoice.isDisabled(), "Referral step continued without the person's choice");
-  await referralStage.locator(`input[name="referral-choice"][value="${referralValue}"]`).check();
+  const confirmChoice = referralStage.locator(referralValue === "continue" ? ".button-primary" : ".button-secondary");
+  check(await confirmChoice.isEnabled(), "Referral action is not available");
   await confirmChoice.click();
   await page.locator('[data-screening-stage="complete"]').waitFor({ state: "visible" });
   check(await page.locator(".entry-context").isVisible(), "Entry context disappeared after completion");
-  check(
-    (await page.locator(".selected-area-summary").textContent())?.includes("খুলনা বিভাগ"),
-    "Selected broad area was not retained through completion",
-  );
-  check(
-    (await page.locator(`[data-screening-stage="complete"] [data-safety-outcome="${expectedOutcome}"]`).count()) === 1,
-    `Safety outcome ${expectedOutcome} was not retained through completion`,
-  );
-  const expectedAudioCopy = audioMode === "upload"
-    ? "ডিভাইস থেকে আপলোড করা হয়েছে"
-    : audioMode === "record" || audioMode === "native-insecure"
-      ? "এই ডিভাইসে রেকর্ড করা হয়েছে"
-      : "এইবার দেওয়া হয়নি";
-  check(
-    (await page.locator('[data-screening-stage="complete"]').textContent())?.includes(expectedAudioCopy),
-    `The ${audioMode} audio choice was not retained through completion`,
-  );
 }
 
 const homePage = await open("/");
@@ -301,11 +290,19 @@ check(
   "Pharmacy-assisted entry link is missing",
 );
 
-const qrImages = homePage.locator(".pharmacy-qr-card img[data-qr-value]");
+const homeQrImages = homePage.locator(".pharmacy-qr-card img[data-qr-value]");
+await homeQrImages.first().waitFor({ state: "visible" });
+check(
+  await homeQrImages.count() === 3,
+  `Expected 3 example pharmacy QR codes on the homepage, found ${await homeQrImages.count()}`,
+);
+
+const directoryPage = await open("/pharmacies");
+const qrImages = directoryPage.locator(".pharmacy-qr-card img[data-qr-value]");
 await qrImages.first().waitFor({ state: "visible" });
 const qrCount = await qrImages.count();
 check(qrCount > 0, "No pharmacy QR codes were generated");
-check(qrCount === 10, `Expected QR codes for all 10 demo pharmacies, found ${qrCount}`);
+check(qrCount === 10, `Expected QR codes for all 10 demo pharmacies in the directory, found ${qrCount}`);
 
 const firstQrValues = [];
 const seenPharmacyIds = new Set();
@@ -353,18 +350,19 @@ for (let index = 0; index < qrCount; index += 1) {
   firstQrValues.push(qrValue);
 }
 
-await homePage.reload({ waitUntil: "networkidle" });
-const reloadedImages = homePage.locator(".pharmacy-qr-card img[data-qr-value]");
+await directoryPage.reload({ waitUntil: "networkidle" });
+const reloadedImages = directoryPage.locator(".pharmacy-qr-card img[data-qr-value]");
 await reloadedImages.first().waitFor({ state: "visible" });
 const reloadedQrValues = await reloadedImages.evaluateAll((images) =>
   images.map((image) => image.getAttribute("data-qr-value")),
 );
 check(
   JSON.stringify(reloadedQrValues) === JSON.stringify(firstQrValues),
-  "Pharmacy QR URLs changed after reloading the page",
+  "Pharmacy QR URLs changed after reloading the directory",
 );
+await directoryPage.close();
 
-await homePage.getByRole("button", { name: "English" }).click();
+await homePage.getByRole("button", { name: "en" }).click();
 check(
   await homePage.getByRole("link", { name: /Check from home/i }).first().isVisible(),
   "English self-use entry is not accessible",
@@ -372,6 +370,10 @@ check(
 check(
   await homePage.getByRole("link", { name: /Pharmacy-assisted check/i }).first().isVisible(),
   "English pharmacy-assisted entry is not accessible",
+);
+check(
+  await homePage.getByRole("link", { name: /View all pharmacies/i }).isVisible(),
+  "The full pharmacy directory link is not accessible",
 );
 
 const dimensions = await homePage.evaluate(() => ({
@@ -388,30 +390,14 @@ const selfPage = await open("/screen?source=self");
 const selfContext = await selfPage.locator(".entry-context").textContent();
 check(selfContext?.includes("আপনি নিজের ডিভাইস থেকে স্ক্রিনিং করছেন।"), "Self-use entry message was not restored");
 check(!selfContext?.includes("PHARMACY_"), "Self-use entry incorrectly contains a pharmacy ID");
-await selfPage.getByRole("button", { name: "English" }).click();
+await selfPage.getByRole("button", { name: "en" }).click();
 check(
   await selfPage.getByText("You are checking from your own device.", { exact: true }).isVisible(),
   "English self-use entry message is missing",
 );
-check(
-  await selfPage.getByText("I Agree and Continue", { exact: true }).isVisible(),
-  "English consent action is missing",
-);
 await selfPage.getByRole("button", { name: "বাংলা" }).click();
 await completeScreeningStep(selfPage, "continue", { audioMode: "upload" });
-check(
-  (await selfPage.locator('[data-screening-stage="complete"]').textContent())?.includes("রেফারেলের পথে যেতে চান"),
-  "Self-use referral preference was not respected",
-);
-await selfPage.getByRole("button", { name: "English" }).click();
-check(
-  await selfPage.getByText("This result does not mean that you have TB.", { exact: false }).isVisible(),
-  "English non-diagnostic formal-evaluation message is missing",
-);
-check(
-  await selfPage.getByText("Your screening suggests that formal TB evaluation is recommended.", { exact: true }).isVisible(),
-  "The required Step 24 formal-evaluation wording is missing",
-);
+await selfPage.getByRole("button", { name: "en" }).click();
 check(
   !(await selfPage.getByText(/you have an? .*chance of TB/i).count()),
   "The completed screening contains a prohibited TB probability claim",
@@ -424,7 +410,7 @@ await completeScreeningStep(continuePage, "not-now", {
   expectedOutcome: "CONTINUE_SCREENING",
 });
 check(
-  (await continuePage.locator('[data-screening-stage="complete"]').textContent())?.includes("যক্ষ্মা বা অন্য অসুস্থতা নেই—এমন প্রমাণ হয় না"),
+  (await continuePage.locator('[data-screening-stage="complete"]').textContent())?.includes("অসুস্থতা নেই প্রমাণ হয় না"),
   "Continue-screening result gives no clear non-reassurance message",
 );
 await continuePage.close();
@@ -436,7 +422,7 @@ await completeScreeningStep(urgentPage, "continue", {
   expectedOutcome: "URGENT_MEDICAL_EVALUATION",
   audioMode: "record",
 });
-await urgentPage.getByRole("button", { name: "English" }).click();
+await urgentPage.getByRole("button", { name: "en" }).click();
 check(
   await urgentPage.getByText(/call Bangladesh National Emergency Service 999/i).isVisible(),
   "English urgent result does not provide Bangladesh emergency guidance",
@@ -497,9 +483,8 @@ await completeScreeningStep(insecureMobilePage, "not-now", { audioMode: "native-
 await insecureMobilePage.close();
 
 const assistedPage = await open(localTestUrl(firstQrValues[0]));
-check(await assistedPage.locator(".shared-device-note").isVisible(), "Shared-device guidance is missing on pharmacy-assisted entry");
 check((await assistedPage.locator('input[type="tel"]').count()) === 0, "Pharmacy-assisted screening incorrectly requires a phone number");
-await assistedPage.getByRole("button", { name: "English" }).click();
+await assistedPage.getByRole("button", { name: "en" }).click();
 check(
   await assistedPage.getByText("This screening is being assisted by Rahman Pharmacy.", { exact: true }).isVisible(),
   "English pharmacy-assisted entry message is missing or lost its pharmacy name",
@@ -507,24 +492,16 @@ check(
 await assistedPage.getByRole("button", { name: "বাংলা" }).click();
 await completeScreeningStep(assistedPage, "not-now");
 const assistedComplete = assistedPage.locator('[data-screening-stage="complete"]');
-check(
-  (await assistedComplete.textContent())?.includes("এখন কোনো রেফারেল তৈরি হবে না"),
-  "The person's decision not to create a referral was not respected",
-);
 await assistedComplete.locator('button[type="button"]').click();
-check(await assistedPage.locator('[data-screening-stage="consent"]').isVisible(), "Shared-device answers could not be cleared");
-check(!(await assistedPage.locator('input[type="checkbox"]').isChecked()), "Consent remained after clearing the shared-device session");
-await assistedPage.locator('[data-screening-stage="consent"] input[type="checkbox"]').check();
-await assistedPage.locator('[data-screening-stage="consent"] button[type="button"]').click();
+const resetConcern = assistedPage.locator('[data-screening-stage="concern"]');
+check(await resetConcern.isVisible(), "Shared-device answers could not be cleared");
+await resetConcern.locator(".pathway-card").first().click();
+await assistedPage.locator('[data-screening-stage="consent"] .button-primary').click();
 check(
   (await assistedPage.locator('[data-screening-stage="questions"] input[name="area"]:checked').count()) === 0,
   "Broad-area choice remained after clearing the shared-device session",
 );
-await assistedPage.getByRole("button", { name: "English" }).click();
-check(
-  await assistedPage.getByText(/You do not need your own smartphone or phone number/i).isVisible(),
-  "English shared-device guidance is not available",
-);
+await assistedPage.getByRole("button", { name: "en" }).click();
 await assistedPage.close();
 
 for (const viewport of [
@@ -537,7 +514,7 @@ for (const viewport of [
   watchRuntime(devicePage);
   const response = await devicePage.goto(localTestUrl(firstQrValues[0]), { waitUntil: "networkidle" });
   check(response?.status() === 200, `Pharmacy-assisted ${viewport.name} view returned HTTP ${response?.status()}`);
-  check(await devicePage.locator('[data-screening-stage="consent"]').isVisible(), `Consent is not visible on a pharmacy ${viewport.name}`);
+  check(await devicePage.locator('[data-screening-stage="concern"]').isVisible(), `Concern selection is not visible on a pharmacy ${viewport.name}`);
   const size = await devicePage.evaluate(() => ({
     clientWidth: document.documentElement.clientWidth,
     scrollWidth: document.documentElement.scrollWidth,

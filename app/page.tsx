@@ -56,11 +56,13 @@ export default async function HomePage() {
       </section>
 
       <section className="container section-block" aria-labelledby="how-title">
-        <SectionHeading title={{ bn: "কীভাবে পাশে থাকি", en: "How we support you" }} description={{ bn: "সহজ ভাষা, পরিষ্কার পদক্ষেপ এবং মানুষের নিয়ন্ত্রণ।", en: "Simple language, clear steps, and control in your hands." }} />
+        <SectionHeading title={{ bn: "পাঁচটি স্বাস্থ্য-উদ্বেগের জন্য একটি নিরাপদ পরবর্তী পদক্ষেপ", en: "One safe next step for five health concerns" }} description={{ bn: "একই যত্নশীল পথ—শ্বাসতন্ত্র, জ্বর, পানিশূন্যতা, ত্বক ও স্নায়ু, এবং শিশুর শ্বাসকষ্টের জন্য।", en: "One careful journey for respiratory concerns, fever, dehydration, skin and nerve concerns, and child breathing concerns." }} />
         <div className="feature-grid three-column">
-          <FeatureCard number="01" icon="screen" title={{ bn: "সংক্ষিপ্ত স্ক্রিনিং", en: "Short screening" }} description={{ bn: "কয়েকটি প্রাসঙ্গিক প্রশ্নের মাধ্যমে প্রয়োজন বুঝতে সহায়তা।", en: "A few relevant questions help identify the appropriate next step." }} />
-          <FeatureCard number="02" icon="location" title={{ bn: "সঠিক সেবার দিকনির্দেশনা", en: "Care navigation" }} description={{ bn: "প্রয়োজনে উপযুক্ত আনুষ্ঠানিক যক্ষ্মা সেবাকেন্দ্রের পথে সহায়তা।", en: "Guidance toward suitable formal TB services when needed." }} />
-          <FeatureCard number="03" icon="care" title={{ bn: "ফলো-আপ সহায়তা", en: "Follow-up support" }} description={{ bn: "পরবর্তী কাজটি মনে রাখা এবং সেবার সঙ্গে যুক্ত থাকতে সহায়তা।", en: "Help remembering the next action and staying connected to care." }} />
+          <FeatureCard number="01" icon="screen" title={{ bn: "শ্বাসতন্ত্র ও দীর্ঘস্থায়ী কাশি", en: "Respiratory concerns and persistent cough" }} description={{ bn: "কাশি, শ্বাসকষ্ট বা শ্বাসতন্ত্রের সতর্কতার লক্ষণের জন্য পরবর্তী পদক্ষেপ।", en: "A next step for cough, breathing difficulty, or respiratory warning signs." }} />
+          <FeatureCard number="02" icon="care" title={{ bn: "জ্বর ও মশাবাহিত অসুস্থতার উদ্বেগ", en: "Fever and mosquito-borne illness concerns" }} description={{ bn: "জ্বরের সঙ্গে বিপদের লক্ষণ থাকলে নিরাপদ দিকনির্দেশনা।", en: "Safe guidance when fever comes with warning signs." }} />
+          <FeatureCard number="03" icon="care" title={{ bn: "ডায়রিয়া ও পানিশূন্যতা", en: "Diarrhoea and dehydration" }} description={{ bn: "তরল ক্ষতি বা পানিশূন্যতার উদ্বেগে কী করবেন তা বুঝুন।", en: "Understand the next step when fluid loss or dehydration is a concern." }} />
+          <FeatureCard number="04" icon="care" title={{ bn: "ত্বক, অনুভূতি ও স্নায়ুর উদ্বেগ", en: "Skin, sensation, and nerve concerns" }} description={{ bn: "অস্বাভাবিক দাগ, অবশভাব বা দুর্বলতার জন্য সেবার দিকনির্দেশনা।", en: "Care navigation for unusual patches, numbness, or weakness." }} />
+          <FeatureCard number="05" icon="care" title={{ bn: "শিশুর কাশি বা শ্বাসকষ্ট", en: "Child cough or difficult breathing" }} description={{ bn: "শিশুর শ্বাসতন্ত্রের সতর্কতার লক্ষণে দ্রুত পরবর্তী পদক্ষেপ।", en: "A prompt next step for child breathing warning signs." }} />
         </div>
       </section>
 
@@ -68,10 +70,10 @@ export default async function HomePage() {
         <SectionHeading
           id="pharmacy-access-title"
           title={{ bn: "ফার্মেসির QR দিয়ে শুরু করুন", en: "Start with a pharmacy QR" }}
-          description={{ bn: "প্রতিটি QR একটি নির্দিষ্ট ফার্মেসির পরিচয় বহন করে।", en: "Each QR carries the identity of one specific pharmacy." }}
+          description={{ bn: "এটি সহায়তা প্রয়োজন এমন মানুষের জন্য একটি অতিরিক্ত প্রবেশপথ। প্রতিটি QR একটি নির্দিষ্ট ফার্মেসির পরিচয় বহন করে।", en: "This is an additional entry point for people who want help. Each QR carries the identity of one specific pharmacy." }}
         />
         <div className="pharmacy-qr-grid">
-          {demoPharmacies.map((pharmacy) => (
+          {demoPharmacies.slice(0, 3).map((pharmacy) => (
             <PharmacyQrCard
               key={pharmacy.id}
               pharmacy={pharmacy}
@@ -79,6 +81,9 @@ export default async function HomePage() {
               messagingLinks={{ telegram: telegramEntryLink(process.env.TELEGRAM_BOT_USERNAME ?? "", { source: "PHARMACY", pharmacyId: pharmacy.id }) }}
             />
           ))}
+        </div>
+        <div className="button-row">
+          <ActionLink href="/pharmacies" variant="secondary" icon="pharmacy" label={{ bn: "সব ফার্মেসি দেখুন", en: "View all pharmacies" }} />
         </div>
       </section>
 

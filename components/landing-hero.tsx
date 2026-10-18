@@ -41,10 +41,10 @@ export function LandingHero() {
           <BilingualText copy={{ bn: "যেখানেই থাকুন, সহজ ও নিরাপদ দিকনির্দেশনা", en: "Clear, safe guidance wherever you are" }} />
         </div>
         <h1 id="home-title">
-          <BilingualText copy={{ bn: "কাশি নিয়ে দুশ্চিন্তা? পরবর্তী নিরাপদ পদক্ষেপটি জানুন।", en: "Worried about a cough? Find your next safe step." }} />
+          <BilingualText copy={{ bn: "সতর্কতার কোনো লক্ষণ দেখছেন? পরবর্তী নিরাপদ পদক্ষেপটি খুঁজুন।", en: "Notice a warning sign. Find your next safe step." }} />
         </h1>
         <p className="lede">
-          <BilingualText copy={{ bn: "ফার্স্ট সাইনস আপনাকে প্রাথমিক স্ক্রিনিং থেকে আনুষ্ঠানিক যক্ষ্মা সেবার পথে এগিয়ে যেতে সাহায্য করে।", en: "First Signs helps you move from initial screening toward formal TB care." }} />
+          <BilingualText copy={{ bn: "ফার্স্ট সাইনস স্বাস্থ্য-সতর্কতার লক্ষণ বুঝতে, উপযুক্ত সেবা খুঁজতে এবং যাচাইকৃত রেফারেলের মাধ্যমে সেবায় পৌঁছাতে সাহায্য করে।", en: "First Signs helps people understand health warning signs, find appropriate care, and follow through with verified referrals." }} />
         </p>
         <div className="button-row">
           <ActionLink href="/screen?source=self" icon="home" label={{ bn: "বাড়ি থেকে যাচাই করুন", en: "Check from home" }} />
@@ -53,8 +53,8 @@ export function LandingHero() {
         <div className="safety-line">
           <Icon name="info" />
           <p>
-            <strong><BilingualText copy={{ bn: "এটি যক্ষ্মা রোগ নির্ণয় করে না।", en: "This does not diagnose TB." }} /></strong>{" "}
-            <BilingualText copy={{ bn: "প্রস্তাব করা হলে আনুষ্ঠানিক পরীক্ষা প্রয়োজন।", en: "Formal evaluation is required when recommended." }} />
+            <strong><BilingualText copy={{ bn: "এটি কোনো রোগ নির্ণয় করে না।", en: "This does not diagnose a disease." }} /></strong>{" "}
+            <BilingualText copy={{ bn: "পরামর্শ দেওয়া হলে স্বাস্থ্যকর্মীর মূল্যায়ন নিন।", en: "Seek professional evaluation when it is recommended." }} />
           </p>
         </div>
       </div>

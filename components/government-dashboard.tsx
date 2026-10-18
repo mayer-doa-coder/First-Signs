@@ -266,14 +266,14 @@ export function GovernmentDashboard() {
                       <div className="red-area-actions">
                         <div className="red-investigation-signal" role="alert">
                           <Icon name="info" />
-                          <strong><BilingualText copy={{ bn: "সম্ভাব্য টিবি-সংক্রান্ত স্ক্রিনিং কার্যক্রম বেশি — তদন্ত করুন", en: "High potential-TB screening activity — investigate" }} /></strong>
+                          <strong><BilingualText copy={{ bn: "স্ক্রিনিং কার্যক্রম বেশি — তদন্ত করুন", en: "High screening activity — investigate" }} /></strong>
                         </div>
                         <h4><BilingualText copy={{ bn: "সম্ভাব্য সরকারি পদক্ষেপ", en: "Possible government actions" }} /></h4>
                         <ul>
                           <li><BilingualText copy={{ bn: "এলাকাটি পর্যালোচনা করুন", en: "Review area" }} /></li>
                           <li><BilingualText copy={{ bn: "সচেতনতামূলক কার্যক্রমের পরিকল্পনা করুন", en: "Plan awareness activity" }} /></li>
                           <li><BilingualText copy={{ bn: "মোবাইল স্ক্রিনিং/পরীক্ষা বিবেচনা করুন", en: "Consider mobile screening/testing" }} /></li>
-                          <li><BilingualText copy={{ bn: "অতিরিক্ত টিবি সেবার সক্ষমতা প্রয়োজন কি না পর্যালোচনা করুন", en: "Review need for additional TB service capacity" }} /></li>
+                          <li><BilingualText copy={{ bn: "অতিরিক্ত স্বাস্থ্যসেবার সক্ষমতা প্রয়োজন কি না পর্যালোচনা করুন", en: "Review need for additional health-service capacity" }} /></li>
                         </ul>
                         <p><BilingualText copy={{ bn: "এটি শুধু তদন্তের সংকেত। জনস্বাস্থ্য কর্মীরা পর্যালোচনা করে সিদ্ধান্ত নেবেন; ড্যাশবোর্ড নিজে কোনো সেবাকেন্দ্র তৈরি করে না।", en: "This is an investigation signal only. Public-health staff review and decide; the dashboard does not automatically create a service centre." }} /></p>
                       </div>

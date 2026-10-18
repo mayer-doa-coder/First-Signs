@@ -54,16 +54,16 @@ const outcomeLabels: Record<StoredCareOutcome, Copy> = {
 
 const recommendationCopy: Record<StoredCareOutcome, Copy> = {
   CONTINUE_SCREENING: {
-    bn: "বর্তমান উত্তরে জরুরি বা আনুষ্ঠানিক মূল্যায়নের নির্দিষ্ট মানদণ্ড মেলেনি। এতে যক্ষ্মা বা অন্য অসুস্থতা নেই—এমন প্রমাণ হয় না। উপসর্গ থেকে গেলে, বেড়ে গেলে বা উদ্বেগ হলে চিকিৎসাসেবা নিন।",
-    en: "Your current answers did not meet a fixed urgent or formal-evaluation criterion. This does not rule out TB or another illness. Seek medical care if symptoms persist, worsen, or concern you.",
+    bn: "বর্তমান উত্তরে জরুরি বা আনুষ্ঠানিক মূল্যায়নের নির্দিষ্ট মানদণ্ড মেলেনি। এতে কোনো অসুস্থতা নেই—এমন প্রমাণ হয় না। উপসর্গ থেকে গেলে, বেড়ে গেলে বা উদ্বেগ হলে চিকিৎসাসেবা নিন।",
+    en: "Your current answers did not meet a fixed urgent or formal-evaluation criterion. This does not rule out illness. Seek medical care if symptoms persist, worsen, or concern you.",
   },
   FORMAL_TB_EVALUATION_RECOMMENDED: {
     bn: "আপনার স্ক্রিনিং বলছে যে পেশাদার স্বাস্থ্য মূল্যায়নের পরামর্শ দেওয়া হচ্ছে। এটি কোনো রোগ নির্ণয় নয়। তালিকাভুক্ত সেবাকেন্দ্রে মূল্যায়ন ও উপযুক্ত পরীক্ষা করান।",
     en: "Your screening suggests that professional health evaluation is recommended. This is not a diagnosis. Please receive evaluation and appropriate testing at a listed care facility.",
   },
   URGENT_MEDICAL_EVALUATION: {
-    bn: "কাশির সঙ্গে রক্ত এলে দ্রুত চিকিৎসকের মূল্যায়ন প্রয়োজন। এটি যক্ষ্মা রোগ নির্ণয় নয় এবং অন্য গুরুতর কারণও থাকতে পারে।",
-    en: "Blood in the sputum needs prompt medical assessment. This is not a TB diagnosis, and there may be another serious cause.",
+    bn: "আপনার উত্তরে এমন একটি বিপদচিহ্ন আছে যার জন্য এখনই চিকিৎসা মূল্যায়ন প্রয়োজন। এটি কোনো রোগ নির্ণয় নয়।",
+    en: "Your answers include a danger sign that needs medical evaluation now. This is not a diagnosis.",
   },
   CONTINUE_WITH_CARE_INFORMATION: {
     bn: "নির্দিষ্ট রেফারেল বা জরুরি মানদণ্ড পাওয়া যায়নি। এতে অসুস্থতা নেই প্রমাণ হয় না। লক্ষণ চলতে থাকলে, বাড়লে বা উদ্বেগ হলে সেবা নিন।",
@@ -640,8 +640,8 @@ export function CareCompanion({
           },
           nextStatus === "COMPLETED"
             ? {
-                bn: "আনুষ্ঠানিক মূল্যায়নে উপস্থিতি নিশ্চিত হয়েছে। এটি যক্ষ্মা রোগ নির্ণয় বা পরীক্ষার ফল নয়।",
-                en: "Formal evaluation attendance confirmed. This is not a TB diagnosis or test result.",
+                bn: "আনুষ্ঠানিক মূল্যায়নে উপস্থিতি নিশ্চিত হয়েছে। এটি কোনো রোগ নির্ণয় বা পরীক্ষার ফল নয়।",
+                en: "Formal evaluation attendance confirmed. This is not a diagnosis or test result.",
               }
             : {
                 bn: `বর্তমান রেফারেল অবস্থা: ${referralStatusLabels[nextStatus].bn}। নির্বাচিত সেবাকেন্দ্র: ${latestReferral.centreName}।`,
@@ -820,7 +820,7 @@ export function CareCompanion({
             <IconTile icon="info" tone="red" />
             <StatusPill tone="risk" icon="info" label={{ bn: "জরুরি নির্দেশনা", en: "Urgent guidance" }} />
           </div>
-          <h2><BilingualText copy={{ bn: "কাশির সঙ্গে রক্তের জন্য দ্রুত চিকিৎসা মূল্যায়ন নিন", en: "Seek prompt medical evaluation for blood in your sputum" }} /></h2>
+          <h2><BilingualText copy={{ bn: "এখনই জরুরি চিকিৎসা মূল্যায়ন নিন", en: "Seek urgent medical evaluation now" }} /></h2>
           <p role="alert"><BilingualText copy={emergencyCopy} /></p>
         </ClayCard>
       )}
@@ -833,27 +833,27 @@ export function CareCompanion({
           </div>
           <h2><BilingualText copy={{ bn: "আনুষ্ঠানিক মূল্যায়নে উপস্থিতি নিশ্চিত হয়েছে।", en: "Formal evaluation attendance confirmed." }} /></h2>
           <p><BilingualText copy={{
-            bn: "এর মানে আপনি সেবাকেন্দ্রে পৌঁছেছেন এবং আনুষ্ঠানিক মূল্যায়ন শুরু হয়েছে। এটি যক্ষ্মা রোগ নির্ণয় বা পরীক্ষার ফল নয়। সেবাকেন্দ্রের কর্মী উপসর্গ ও ইতিহাস দেখে প্রয়োজন অনুযায়ী কফের জিনএক্সপার্ট বা অন্য দ্রুত আণবিক পরীক্ষা, মাইক্রোস্কপি, বুকের এক্স-রে বা অন্য পরীক্ষা বেছে নিতে পারেন।",
-            en: "This means you reached the centre and formal evaluation started. It is not a TB diagnosis or test result. Centre staff may review symptoms and history and select sputum GeneXpert/another rapid molecular test, microscopy, chest X-ray, or other tests as appropriate.",
+            bn: "এর মানে আপনি সেবাকেন্দ্রে পৌঁছেছেন এবং আনুষ্ঠানিক মূল্যায়ন শুরু হয়েছে। এটি কোনো রোগ নির্ণয় বা পরীক্ষার ফল নয়। সেবাকেন্দ্রের কর্মী আপনার উপসর্গ ও ইতিহাস দেখে উপযুক্ত পরীক্ষা বা পরবর্তী পদক্ষেপ ঠিক করবেন।",
+            en: "This means you reached the care facility and formal evaluation started. It is not a diagnosis or test result. Facility staff will review your symptoms and history and determine appropriate tests or next steps.",
           }} /></p>
           <div className="evaluation-expectations">
             <span className="mini-label"><BilingualText copy={{ bn: "সেবাকেন্দ্রে সাধারণত যা হয়", en: "What usually happens at the centre" }} /></span>
             <ul>
               <li><BilingualText copy={{
-                bn: "ফুসফুসের যক্ষ্মা সন্দেহ হলে সাধারণত কফের নমুনা চাওয়া হয়—প্রায়ই একটি তখনই এবং একটি পরদিন সকালের নমুনা।",
-                en: "If pulmonary TB is suspected, a sputum (phlegm) sample is usually requested — often one on the spot and one from the next morning.",
+                bn: "কর্মীরা আপনার উপসর্গ ও স্বাস্থ্য-ইতিহাস পর্যালোচনা করবেন।",
+                en: "Staff will review your symptoms and health history.",
               }} /></li>
               <li><BilingualText copy={{
-                bn: "কফ দিতে না পারলে কর্মীকে জানান; তাঁরা উপযুক্ত বিকল্প দেখবেন।",
-                en: "Tell the staff if you cannot produce sputum; they will consider a suitable alternative.",
+                bn: "প্রয়োজনে তারা উপযুক্ত পরীক্ষা, চিকিৎসক বা অন্য সেবার পরামর্শ দেবেন।",
+                en: "When needed, they will recommend appropriate tests, a clinician, or another service.",
               }} /></li>
               <li><BilingualText copy={{
-                bn: "দ্রুত আণবিক পরীক্ষার ফল অনেক সময় একই দিনে আসে, তবে সময় কেন্দ্র ও পরীক্ষাভেদে আলাদা হয়। ফল জানতে কেন্দ্রের বলা সময়ে ফিরে যান।",
-                en: "Rapid molecular test results can often come the same day, but timing differs by centre and test. Go back when the centre tells you, to get your result.",
+                bn: "পরীক্ষা বা পরবর্তী সাক্ষাতের সময় সম্পর্কে সেবাকেন্দ্রের নির্দেশনা অনুসরণ করুন।",
+                en: "Follow the facility's instructions about testing or a follow-up visit.",
               }} /></li>
               <li><BilingualText copy={{
-                bn: "জাতীয় যক্ষ্মা কর্মসূচির সেবা সরকারি কেন্দ্রে বিনামূল্যে দেওয়া হয়। তবু কোনো পরীক্ষার (যেমন বুকের এক্স-রে) জন্য কোথাও ফি লাগতে পারে—শুরুতেই কর্মীকে জিজ্ঞাসা করে নিন।",
-                en: "National TB programme services are provided free at government centres. Even so, some places may charge a fee for a test such as a chest X-ray — ask the staff at the start.",
+                bn: "খরচ, প্রাপ্যতা বা প্রয়োজনীয় প্রস্তুতি সম্পর্কে শুরুতেই কর্মীকে জিজ্ঞাসা করুন।",
+                en: "Ask staff at the start about costs, availability, or any preparation you need.",
               }} /></li>
             </ul>
           </div>

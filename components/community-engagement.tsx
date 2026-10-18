@@ -107,8 +107,8 @@ export function CommunityEngagement() {
     <div className="community-layout section-block" data-community-engagement>
       <ClayCard className="feedback-card">
         <StatusPill tone="neutral" icon="users" label={{ bn: "নামবিহীন কমিউনিটি মতামত", en: "Anonymous community feedback" }} />
-        <h2><BilingualText copy={{ bn: "যক্ষ্মা পরীক্ষায় যেতে মানুষের সবচেয়ে বড় বাধা সাধারণত কী?", en: "What usually prevents people from going for TB testing?" }} /></h2>
-        <p><BilingualText copy={{ bn: "নিজের বা অন্য কারও যক্ষ্মা অবস্থা জানাবেন না। শুধু একটি সাধারণ বাধা বেছে নিন।", en: "Do not share your or anyone else's TB status. Choose only one general barrier." }} /></p>
+        <h2><BilingualText copy={{ bn: "স্বাস্থ্যসেবা নিতে মানুষের সবচেয়ে বড় বাধা সাধারণত কী?", en: "What usually prevents people from reaching health care?" }} /></h2>
+        <p><BilingualText copy={{ bn: "নিজের বা অন্য কারও রোগের অবস্থা জানাবেন না। শুধু একটি সাধারণ বাধা বেছে নিন।", en: "Do not share your or anyone else's disease status. Choose only one general barrier." }} /></p>
         <form onSubmit={submitFeedback}>
           <fieldset className="community-choice-fieldset" disabled={submitting || submitted}>
             <legend className="sr-only"><BilingualText copy={{ bn: "একটি বাধা বেছে নিন", en: "Choose one barrier" }} /></legend>
@@ -148,7 +148,7 @@ export function CommunityEngagement() {
             <BilingualText copy={{ bn: "এখন মতামতের তথ্য পাওয়া যাচ্ছে না। কিছুক্ষণ পরে আবার চেষ্টা করুন।", en: "Community feedback is unavailable right now. Please try again later." }} />
           </p>
         )}
-        <p className="helper-text"><BilingualText copy={{ bn: "শুধু নির্বাচিত বাধা ও জমা দেওয়ার সময় রাখা হয়—নাম, ফোন, মুক্ত লেখা বা যক্ষ্মা অবস্থা নয়।", en: "Only the selected barrier and submission time are kept—never a name, phone number, free text, or TB status." }} /></p>
+        <p className="helper-text"><BilingualText copy={{ bn: "শুধু নির্বাচিত বাধা ও জমা দেওয়ার সময় রাখা হয়—নাম, ফোন, মুক্ত লেখা বা রোগের অবস্থা নয়।", en: "Only the selected barrier and submission time are kept—never a name, phone number, free text, or disease status." }} /></p>
       </ClayCard>
 
       <div className="community-results-column">

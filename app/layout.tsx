@@ -24,7 +24,7 @@ const merriweather = Merriweather({
 
 export const metadata: Metadata = {
   title: { default: "First Signs", template: "%s | First Signs" },
-  description: "English-first TB screening and care-navigation service for Bangladesh.",
+  description: "Bilingual care navigation for health warning signs in Bangladesh.",
   referrer: "no-referrer",
   other: { google: "notranslate" },
 };

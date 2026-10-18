@@ -21,6 +21,11 @@ pathway uses reviewed, deterministic rules in which urgent danger signs take
 precedence. The platform routes a person to appropriate evaluation; it does
 not diagnose TB, dengue, malaria, leprosy, pneumonia, or another illness.
 
+Product positioning, navigation, and shared care-journey documentation must
+give all five pathways equal prominence. TB-specific facility, audio, staff,
+and research details must be clearly presented as pathway-specific
+implementation, not as the identity or primary focus of First Signs.
+
 The fever pathway must never infer dengue rather than malaria from overlapping
 symptoms. The child-breathing pathway must never label a child as having
 pneumonia. Adults who select the child-breathing pathway receive general
@@ -38,9 +43,10 @@ confirmed outbreaks—and must never expose identity, raw answers, referral
 tokens, or audio. The existing synthetic 3/5 seven-day thresholds are test
 thresholds only and are not approved real-world outbreak definitions.
 
-Before public clinical use, the final English and Bangla question wording,
+Before public clinical use, the final wording for every supported language,
 danger signs, rule versions, and care messages require documented clinical and
-public-health reviewer approval.
+public-health reviewer approval. The current release implements English and
+Bangla; additional languages require the same review before release.
 
 ## 2. One-Line Description
 
@@ -61,13 +67,14 @@ The main care journey is:
 
 The product does **not** diagnose illness. The respiratory/TB pathway may show a separately labelled, optional **investigational acoustic TB-triage score** only when the requirements in Section 10A are met. The score is a research signal for whether a cough recording resembles the model's validated TB-screening cohort; it is not a diagnosis, a confirmed probability that a person has TB, or a substitute for clinical assessment and microbiological testing.
 
-## Language Requirement
+## Multilingual Requirement
 
-First Signs is built primarily for Bangladesh. All user-facing interfaces and messages must be implemented in both Bangla and English from the first version, including patient, pharmacy, TB-centre verification, government/public-health, and community screens.
+First Signs is a multilingual product built primarily for Bangladesh. The current release supports English and Bangla across every user-facing interface and message, including patient, pharmacy, care-facility verification, government/public-health, and community screens. The language system must remain extensible so reviewed languages can be added without changing deterministic safety logic.
 
 - English is the default and primary language.
-- Bangla is the secondary language and must be available from the persistent language toggle from the first screen; it must not be postponed as a later enhancement.
-- Safety, consent, referral, and follow-up messages must keep the same meaning in both languages.
+- Bangla is a fully supported language and must be available from the persistent language toggle from the first screen; it must not be postponed as a later enhancement.
+- Any additional language requires complete translated interface and safety content, clinical and language review, an approved font, and the same success, failure, and accessibility checks before release.
+- Safety, consent, referral, and follow-up messages must preserve equivalent meaning in every supported language.
 
 ### Typography
 
@@ -253,7 +260,7 @@ Show only anonymous and aggregated information:
 - pathway-specific hotspot warnings when one area shows unusually high screening or referral activity
 - a real interactive Bangladesh basemap with privacy-safe area-level density overlays; it must never plot an individual's GPS position
 - percentages must describe the screened/referral cohort and display their denominator. They must never be labelled as population disease prevalence or confirmed disease occurrence.
-- each pathway may appear only after its deterministic screening rules, bilingual safety copy, data provenance, aggregation threshold, and non-diagnostic label are included in this PRD and implemented.
+- each pathway may appear only after its deterministic screening rules, multilingual safety copy for every supported language, data provenance, aggregation threshold, and non-diagnostic label are included in this PRD and implemented.
 
 ### Hotspot Map Rule
 
@@ -305,7 +312,7 @@ Medical safety decisions should remain fixed rules.
 
 ### A1. Multi-Syndrome Daily Health Companion
 
-Provide a bilingual daily companion focused on approved-pathway health education, care navigation,
+Provide a multilingual daily companion focused on approved-pathway health education, care navigation,
 and basic medicine information. It may answer general health-education
 questions, but it must not diagnose, prescribe, calculate a personal treatment
 plan, or replace a clinician or pharmacist.
@@ -336,7 +343,7 @@ plan, or replace a clinician or pharmacist.
 
 ### A2. Medicine Corner
 
-Provide a bilingual, searchable Medicine Corner with at least 100 common
+Provide a multilingual, searchable Medicine Corner with at least 100 common
 generic medicine ingredients. It is a public education aid, not a prescription
 tool, stock catalogue, medicine-recognition tool, or a way to diagnose or treat
 a person.
@@ -396,9 +403,9 @@ The cough-presence classifier may be trained with balanced, high-confidence Coug
 
 The optional TB-triage classifier requires a separately authorised dataset containing cough recordings and microbiological TB reference labels. Before a dataset or a released third-party weight may be used, record its source URL, version or revision, licence/terms, population, reference standard, recording protocol, class balance, split method, and evaluation results. A Hugging Face mirror or repository without a dataset card, licence/terms, model card, and data provenance is an unverified lead and must not be used for training or inference. A repository licence alone does not establish that its model weights or upstream medical data may be reused.
 
-For the hackathon, the only permitted patient-facing interpretation is an **investigational acoustic TB-triage score** with a companion concern band: `ELEVATED_ACOUSTIC_CONCERN`, `LOWER_ACOUSTIC_CONCERN`, or `INCONCLUSIVE`. A displayed percentage is permitted only when the versioned model has a calibration report for a defined reference population, and it must be labelled in both languages as a research triage estimate rather than the person's probability of TB. Never call it a diagnosis, confirmation, or rule-out.
+For the hackathon, the only permitted patient-facing interpretation is an **investigational acoustic TB-triage score** with a companion concern band: `ELEVATED_ACOUSTIC_CONCERN`, `LOWER_ACOUSTIC_CONCERN`, or `INCONCLUSIVE`. A displayed percentage is permitted only when the versioned model has a calibration report for a defined reference population, and it must be labelled in every supported language as a research triage estimate rather than the person's probability of TB. Never call it a diagnosis, confirmation, or rule-out.
 
-The triage score must not determine referral eligibility, must never lower or replace the deterministic Section 14 safety outcome, and must not be used to withhold testing. An elevated score may add a bilingual recommendation for formal evaluation; a lower or inconclusive score must retain all symptom-based safety recommendations. Raw audio and embeddings are transient and must not be persisted by this workflow. If decoding, model loading, or inference fails, show the documented symptom-based fallback and keep the care-navigation flow usable.
+The triage score must not determine referral eligibility, must never lower or replace the deterministic Section 14 safety outcome, and must not be used to withhold testing. An elevated score may add a recommendation in every supported language for formal evaluation; a lower or inconclusive score must retain all symptom-based safety recommendations. Raw audio and embeddings are transient and must not be persisted by this workflow. If decoding, model loading, or inference fails, show the documented symptom-based fallback and keep the care-navigation flow usable.
 
 The published model artifact must include person-disjoint train/validation/held-out splits, sensitivity, specificity, ROC-AUC, calibration, confidence intervals, subgroup results where available, and a documented external-validation limitation. It must state that evidence from one country, phone type, recording workflow, or referral population does not establish performance in Bangladesh.
 
