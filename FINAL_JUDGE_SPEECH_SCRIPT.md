@@ -14,10 +14,10 @@
 | 0:44–1:03 | Slide 4 | Introduce the solution. |
 | 1:03–1:21 | Slide 5 | Explain the care journey in plain language. |
 | 1:21–1:44 | Slide 6 | Explain the technical architecture and safeguards. |
-| 1:44–3:39 | Screen recording | Demonstrate the working product. |
-| 3:39–4:04 | Slide 7 | Explain the differentiation. |
-| 4:04–4:38 | Slide 8 | Explain the responsible roadmap and close. |
-| 4:38–4:48 | Slide 8 | Hold the final message and QR/link. |
+| 1:44–3:39 | Screen recording | Demonstrate the working product and admin oversight. |
+| 3:39–4:03 | Slide 7 | Explain the differentiation. |
+| 4:03–4:37 | Slide 8 | Explain the responsible roadmap and close. |
+| 4:37–4:47 | Slide 8 | Hold the final message and QR/link. |
 
 ---
 
@@ -129,15 +129,15 @@ Begin the screen recording on the landing page. Keep the cursor deliberate. Use 
 
 > At the intended facility, authorized staff can record that the person arrived and formal evaluation began. This is independent: an assisting pharmacy cannot verify its own referral, and attendance is not a diagnosis or treatment result.
 
-### 3:19–3:31 — Pharmacy and public-health views
+### 3:19–3:34 — Pharmacy, public-health, and admin views
 
-**Show:** Pharmacy workspace, followed by the public-health or admin dashboard.
+**Show:** Pharmacy workspace, then the public-health/admin overview, anonymous review signals, and the broad-area activity map.
 
 **Say:**
 
-> Pharmacies see only their own eligible workflow activity and simulated credits. Public-health teams see grouped, broad-area investigation signals—not names, raw answers, referral tokens, exact GPS, or confirmed outbreaks.
+> Pharmacies see only their own eligible workflow activity and simulated credits. The admin panel gives authorized programme teams a privacy-safe overview of aggregate screenings, referrals, completion patterns, and operational review signals. It also shows broad-area investigation prompts to support planning—not names, raw answers, exact locations, or confirmed outbreaks.
 
-### 3:31–3:39 — Transition
+### 3:34–3:39 — Transition
 
 **Show:** Return to Slide 7.
 
@@ -145,7 +145,7 @@ Begin the screen recording on the landing page. Keep the cursor deliberate. Use 
 
 > This is how First Signs moves from information to a more accountable path to care.
 
-## 3:39–4:04 — Slide 7: Not another standalone health tool
+## 3:39–4:03 — Slide 7: Not another standalone health tool
 
 **On screen:** Slide 7. Read the left side quickly, then give emphasis to the connected journey on the right.
 
@@ -153,7 +153,7 @@ Begin the screen recording on the landing page. Keep the cursor deliberate. Use 
 
 > A symptom checker, chatbot, map, or referral form can each be useful, but they often stop at one point. First Signs connects the full journey: warning sign to clear next step, facility to portable referral, referral to independent attendance confirmation, and missed visit to follow-up. Multilingual access, fixed rules, role separation, and privacy-safe reporting make that journey more trustworthy across diverse communities.
 
-## 4:04–4:38 — Slide 8: A responsible path from prototype to impact
+## 4:03–4:37 — Slide 8: A responsible path from prototype to impact
 
 **On screen:** Slide 8. Point to Validate, Strengthen, and Pilot responsibly. End on the vision statement.
 
@@ -161,7 +161,7 @@ Begin the screen recording on the landing page. Keep the cursor deliberate. Use 
 
 > First Signs is a functional hackathon prototype, not clinical deployment. Next, we will validate it through independent clinical and multilingual-content review, alongside usability studies with people, pharmacies, and care teams. Then we will strengthen verified facility data, accessibility, and low-bandwidth performance. Finally, we will pursue carefully governed pilots across relevant Asia and Africa settings, and evaluate both impact and privacy. Our vision is simple: no one should be lost between noticing a warning sign and reaching appropriate care.
 
-## 4:38–4:48 — Ending frame
+## 4:37–4:47 — Ending frame
 
 **On screen:** Keep Slide 8 visible. Show a working QR code or clear link to the live prototype and repository.
 

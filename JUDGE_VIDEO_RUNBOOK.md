@@ -25,7 +25,7 @@ Leave the remaining few seconds as a safety buffer. Speak calmly; do not try to 
 1. Use a 16:9 canvas and record at 1080p if possible.
 2. Increase browser zoom to 110–125% so text is readable in the final video.
 3. Use a clean browser profile. Disable notifications, bookmarks bar, extensions, and password prompts.
-4. Pre-open these tabs in this order: landing page, screening start, a prepared outcome/referral state, My Care, verification, pharmacy view, and public-health dashboard. Sign in beforehand where required.
+4. Pre-open these tabs in this order: landing page, screening start, a prepared outcome/referral state, My Care, verification, pharmacy view, admin programme overview, admin review signals, and the broad-area activity map. Sign in beforehand where required.
 5. If the live database is not configured or is slow, use the project’s controlled demo/test state. Never fabricate a successful referral, attendance confirmation, or dashboard signal.
 6. Prepare one safe sample journey: **persistent cough for 14+ days**, with no emergency claim. Say “seek professional evaluation”; do not say that the person “has TB.”
 7. Keep the cursor deliberate: one click, a short pause, then the next click. Avoid typing long answers on camera.
@@ -87,7 +87,7 @@ Record this as one smooth story. It is better to show a complete journey than to
 | 3:01–3:13 | Facility choice, then referral ID / private token / QR ticket. | “Maya can choose an appropriate listed facility and carry the handoff as a referral ID and QR code.” |
 | 3:13–3:24 | My Care. Open the missed-visit barrier / next-action section if available. | “My Care keeps the private journey accessible. If work, cost, transport, or fear prevents a visit, the journey continues instead of ending.” |
 | 3:24–3:33 | Verification workspace with a pre-prepared referral. | “Only authorized staff at the intended facility can record attendance. The assisting pharmacy cannot confirm its own referral.” |
-| 3:33–3:43 | Quickly show pharmacy workspace, then public-health dashboard. | “Pharmacies see only their eligible workflow activity. Public-health teams see grouped, broad-area investigation signals—not identities, raw answers, exact GPS, or confirmed outbreaks.” |
+| 3:33–3:43 | Show the pharmacy workspace, then the admin programme overview, review signals, and broad-area activity map. | “Pharmacies see only their eligible workflow activity. The admin panel gives authorized programme teams a privacy-safe overview of aggregate screenings, referrals, completion patterns, and operational review signals. Broad-area activity is an investigation prompt for planning—not personal data or a confirmed outbreak.” |
 
 ### Demo wording to keep exact
 
