@@ -35,7 +35,7 @@
 
 **Say:**
 
-> Meet Maya, a garment worker and mother in Khulna. She has been coughing for more than two weeks. Missing work costs income. A nearby pharmacy is easy to reach, yet it cannot fully examine her or tell her where to go next. First Signs turns this uncertainty into a practical path to appropriate care.
+> Meet Maya, a working mother. She has been coughing for more than two weeks. Missing work costs income. A nearby pharmacy is easy to reach, yet it cannot fully examine her or tell her where to go next. First Signs turns this uncertainty into a practical path to appropriate care.
 
 ## 0:24–0:44 — Slide 3: People can be lost at every handoff
 
@@ -51,7 +51,7 @@
 
 **Say:**
 
-> First Signs is a bilingual, mobile-first care-navigation platform for Bangladesh. A person can start independently or with help from a participating pharmacy. It supports respiratory, fever, diarrhoea or dehydration, skin or nerve, and child-breathing concerns. Both entry routes lead into one connected workflow in English and Bangla. This is screening and care navigation, never a diagnosis.
+> First Signs is a multilingual, mobile-first care-navigation platform designed for communities across Asia and Africa. A person can start independently or with pharmacy help. It supports five pathways: respiratory, fever and mosquito-borne illness, diarrhoea or dehydration, skin or nerve concerns, and child breathing. Each pathway has its own focused questions, danger signs, and fixed next-step rules. It guides care; it does not diagnose.
 
 ## 1:03–1:21 — Slide 5: From concern to completed handoff
 
@@ -59,7 +59,7 @@
 
 **Say:**
 
-> The care journey is simple: choose a concern, give consent, answer focused questions, and receive clear next-step guidance. The person can select a listed facility and create a private referral with an ID, token, and QR code. The intended facility records attendance, and missed visits receive follow-up support.
+> The care journey is simple: choose a concern, give consent, answer focused questions, and receive clear next-step guidance. Depending on the warning signs, the outcome is care information, professional evaluation, or urgent medical evaluation. The person can then choose a listed facility, create a private referral, and receive follow-up support if a visit is missed.
 
 ## 1:21–1:44 — Slide 6: Safety-first technical architecture
 
@@ -67,7 +67,7 @@
 
 **Say:**
 
-> Technically, web, mobile, and Telegram access all connect to one First Signs application. Next.js, React, and TypeScript run the bilingual interface, fixed safety rules, and care-navigation workflow. Supabase and PostgreSQL manage authentication, private records, role-based access, and scoped reporting. Maps, AI explanations, reminders, and audio are optional extensions; none can change the safety outcome.
+> Technically, web, mobile, and Telegram access all connect to one First Signs application. Next.js, React, and TypeScript run the multilingual interface, fixed safety rules, and care-navigation workflow. Supabase and PostgreSQL manage authentication, private records, role-based access, and scoped reporting. Maps, AI explanations, reminders, and audio are optional extensions; none can change the safety outcome.
 
 ## 1:44–3:39 — Web-app screen recording
 
@@ -75,11 +75,11 @@ Begin the screen recording on the landing page. Keep the cursor deliberate. Use 
 
 ### 1:44–1:55 — Landing page and language
 
-**Show:** Landing page. Briefly show the English/Bangla control, then select self-use.
+**Show:** Landing page. Briefly show the language selector, then select self-use.
 
 **Say:**
 
-> Now let’s see the journey in the working product. The platform is available in English and Bangla, and a person can begin independently or through a pharmacy-assisted route. I’ll use self-use for this example.
+> Now let’s see the journey in the working product. The platform is designed for multilingual access, and a person can begin independently or through a pharmacy-assisted route. I’ll use self-use for this example.
 
 ### 1:55–2:10 — Consent and pathway choice
 
@@ -103,7 +103,7 @@ Begin the screen recording on the landing page. Keep the cursor deliberate. Use 
 
 **Say:**
 
-> The result recommends professional evaluation. Notice the boundary: it clearly explains what Maya should do, but it does not say that she has TB or prescribe treatment. If urgent danger signs are present, they always take priority.
+> The result recommends professional evaluation. Notice the boundary: it clearly explains what Maya should do, but it does not identify a disease or prescribe treatment. If urgent danger signs are present, they always take priority.
 
 ### 2:40–2:53 — Facility and referral
 
@@ -151,7 +151,7 @@ Begin the screen recording on the landing page. Keep the cursor deliberate. Use 
 
 **Say:**
 
-> A symptom checker, chatbot, map, or referral form can each be useful, but they often stop at one point. First Signs connects the full journey: warning sign to clear next step, facility to portable referral, referral to independent attendance confirmation, and missed visit to follow-up. Bilingual access, fixed rules, role separation, and privacy-safe reporting make that journey more trustworthy.
+> A symptom checker, chatbot, map, or referral form can each be useful, but they often stop at one point. First Signs connects the full journey: warning sign to clear next step, facility to portable referral, referral to independent attendance confirmation, and missed visit to follow-up. Multilingual access, fixed rules, role separation, and privacy-safe reporting make that journey more trustworthy across diverse communities.
 
 ## 4:04–4:38 — Slide 8: A responsible path from prototype to impact
 
@@ -159,7 +159,7 @@ Begin the screen recording on the landing page. Keep the cursor deliberate. Use 
 
 **Say:**
 
-> First Signs is a functional hackathon prototype, not clinical deployment. Next, we will validate it through independent clinical and Bangla-language review and usability studies. Then we will strengthen verified facility data, accessibility, and low-bandwidth performance. Finally, we will pursue carefully governed pilots and evaluate both impact and privacy. Our vision is simple: no one should be lost between noticing a warning sign and reaching appropriate care.
+> First Signs is a functional hackathon prototype, not clinical deployment. Next, we will validate it through independent clinical and multilingual-content review, alongside usability studies with people, pharmacies, and care teams. Then we will strengthen verified facility data, accessibility, and low-bandwidth performance. Finally, we will pursue carefully governed pilots across relevant Asia and Africa settings, and evaluate both impact and privacy. Our vision is simple: no one should be lost between noticing a warning sign and reaching appropriate care.
 
 ## 4:38–4:48 — Ending frame
 
