@@ -167,6 +167,47 @@ The updated interface uses responsive layouts that preserve the same care hierar
   </tr>
 </table>
 
+### Operations and alternate access
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/images/screening page.png" alt="First Signs screening page showing the start of a guided care-navigation assessment">
+      <br><strong>Figure 14 — Guided screening.</strong><br>
+      The screening flow gathers focused warning-sign information and directs people to an appropriate next step without diagnosing them.
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/images/telegram bot.png" alt="First Signs Telegram bot offering an alternate route into care navigation">
+      <br><strong>Figure 15 — Telegram access.</strong><br>
+      The optional Telegram channel gives people another way to begin a privacy-conscious care-navigation journey.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/images/Community.png" alt="First Signs Community page for anonymous barriers-to-care feedback">
+      <br><strong>Figure 16 — Community feedback.</strong><br>
+      Structured, anonymous feedback captures barriers to care without collecting disease status or free-text personal details.
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/images/admin page 1.png" alt="First Signs administrator dashboard with privacy-safe programme information">
+      <br><strong>Figure 17 — Programme overview.</strong><br>
+      Administrators see scoped, privacy-safe programme information rather than individual patient records.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/images/admin page 2.png" alt="First Signs administrator view for reviewing grouped care-navigation activity">
+      <br><strong>Figure 18 — Grouped activity review.</strong><br>
+      Aggregate views support operational review while preserving the separation between care navigation and diagnosis.
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/images/admin page 3.png" alt="First Signs administrator dashboard with investigation signals and operational metrics">
+      <br><strong>Figure 19 — Investigation signals.</strong><br>
+      Broad-area signals are prompts for further investigation—not claims of a confirmed outbreak or clinical outcome.
+    </td>
+  </tr>
+</table>
+
 ## General architecture
 
 This view shows the product in the same order a person experiences it.
