@@ -15,6 +15,7 @@ function configuredDevelopmentHost() {
 
 const configuredHost = configuredDevelopmentHost();
 const nextConfig: NextConfig = {
+  agentRules: false,
   allowedDevOrigins: [...new Set([
     ...lanIpv4Addresses(),
     ...(configuredHost ? [configuredHost] : []),

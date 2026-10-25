@@ -33,6 +33,25 @@ You do **not** have to follow every step rigidly. Use the steps as a guide, move
 
 A good general direction is to make the main care journey work first, then add optional integrations and polish.
 
+## Running the website
+
+Install the locked dependencies with `npm ci`; the postinstall script copies the
+MapLibre worker files required by the maps. Configure `.env.local` as described
+below, then use `npm run dev` for development or `npm run build` followed by
+`npm start` for production. The deployed Node service uses the same build and
+start commands. Keep server secrets in the host's protected environment settings.
+
+Run `npm run lint`, `npx tsc --noEmit`, and the relevant `test:*` scripts in
+`package.json` after changes. Browser checks require Google Chrome; many use
+controlled API fixtures, so they do not prove live database or integration
+availability. `npm run test:final` additionally requires the configured database,
+AI, and local HeAR services.
+
+The project's Markdown documentation consists of `PRD.md` and this guide.
+`agentRules: false` in `next.config.ts` prevents Next.js development mode from
+recreating agent instruction files. Before changing Next.js APIs, read the
+version-matched guides in `node_modules/next/dist/docs/`.
+
 ## Server configuration diagnostics
 
 Run `npm run check:config` before starting the app or deploying it. It prints only configuration names and states; it never prints keys, PINs, tokens, or URLs containing secrets.
@@ -1125,6 +1144,116 @@ https://huggingface.co/google/hear-pytorch
 Use the official `google/hear` TensorFlow artifact when the gated PyTorch repository is unavailable to the authenticated Hugging Face account. Test model loading and a `(1, 32000)` input independently before connecting it to the application.
 
 For the prototype classifier, prepare a balanced CoughVID subset using high-confidence weak cough-presence labels (`cough_detected >= 0.95` and `<= 0.05`). Split by recording identity into train, validation, and held-out test sets. Choose the threshold on validation data and publish held-out metrics in the classifier artifact. CoughVID is not a TB dataset and must not be used for TB prediction.
+
+### Acoustic service setup and deployment
+
+The Python service runs separately from Next.js. After accepting Google's
+[HAI-DEF terms](https://developers.google.com/health-ai-developer-foundations/terms),
+create the local environment and download the approved TensorFlow snapshot:
+
+```powershell
+py -3.11 -m venv .artifacts/hear-venv
+.artifacts\hear-venv\Scripts\pip install -r hear-service\requirements.txt
+hf download google/hear --local-dir .artifacts\hear-model
+```
+
+Set `HEAR_MODEL_PATH` to `.artifacts/hear-model`, `HEAR_CLASSIFIER_PATH` to
+`hear-service/model/cough_classifier.json`, and `HEAR_SERVICE_TOKEN` to a private
+random value in the service environment. Start it with:
+
+```powershell
+.artifacts\hear-venv\Scripts\uvicorn hear-service.app:app --host 127.0.0.1 --port 8017
+```
+
+Configure Next.js with `HEAR_SERVICE_URL=http://127.0.0.1:8017` and the same
+server-only token. Raw audio and embeddings remain transient in memory.
+
+For Render, deploy a separate Docker Web Service using the repository root as
+the build context and `hear-service/Dockerfile` as the Dockerfile. Mount a
+persistent disk at `/var/lib/first-signs-hear` and configure:
+
+- `HEAR_MODEL_PATH=/var/lib/first-signs-hear/model`
+- `HEAR_CLASSIFIER_PATH=/app/hear_service/model/cough_classifier.json`
+- `HEAR_SERVICE_TOKEN`: the shared private token.
+- `HF_TOKEN`: a read token only if required by the model's access terms.
+
+The service downloads the model only when missing. After `/health` reports
+`{"status":"ready"}`, configure the Next.js service with the separate service's
+HTTPS origin and matching token, then redeploy. Production `localhost` refers
+to the Next.js service itself and cannot reach a separately hosted Python
+service. If using a temporary tunnel to a local service, a changed tunnel
+origin requires updating `HEAR_SERVICE_URL` and redeploying. Hosting and compute
+may incur costs even when model access is free. Do not commit or redistribute
+downloaded model snapshots; retain `hear-service/NOTICE` and the model terms.
+
+### Bundled cough-presence model and dataset record
+
+`hear-service/model/cough_classifier.json` is `HEAR-COUGH-PRESENCE-V1`, a
+regularized logistic head over a frozen Google HeAR 1.0.0 embedding with 512
+features. The official small health-event detector selects the most cough-like
+two-second window. The detector and classifier must agree; disagreement returns
+`INCONCLUSIVE`. This is cough-presence support only, never TB probability,
+diagnosis, referral eligibility, or a replacement for fixed safety rules.
+
+The training data came from Lara Orlandic, Tomas Teijeiro, and David Atienza's
+[CoughVID release](https://zenodo.org/records/4048312), licensed under Creative
+Commons Attribution 4.0; see the [dataset paper](https://doi.org/10.1038/s41597-021-00937-4).
+The verified `public_dataset.zip` is 951442487 bytes with MD5
+`5c30a8b00c8bb7783a2c15a48cb8ea9e`. Preparation selected 300 positive and 300
+negative recordings using automated weak labels (`>= 0.95` and `<= 0.05`);
+99 quiet or invalid recordings were rejected. No location, age, sex,
+health-status, or other participant metadata is copied into the prepared
+manifest or classifier artifact. Local archives and prepared recordings belong
+only under the ignored `.artifacts/` directory.
+
+Recording-identity groups were split deterministically into 60% training, 20%
+validation, and 20% held-out testing. The threshold of 0.805 was selected on
+validation F1 only. On 101 held-out recordings, balanced accuracy was 0.9360;
+F1, precision, and sensitivity were each 0.9531. These results measure agreement
+with automated weak labels, not clinical correctness or independent external
+validation. CoughVID is neither Bangladesh-specific nor TB-specific. Device,
+environment, population, and weak-label bias can reduce performance. A negative
+signal must never override symptom guidance. Prospective Bangladesh evaluation
+with appropriate consent, governance, and clinical reference outcomes remains
+required before health-impacting use.
+
+To reproduce the downstream head without fine-tuning the HeAR base weights:
+
+```powershell
+.artifacts\hear-venv\Scripts\python hear-service\prepare_coughvid.py .artifacts\datasets\coughvid\public_dataset.zip --output .artifacts\datasets\coughvid\prepared --per-class 300
+.artifacts\hear-venv\Scripts\python hear-service\train_classifier.py .artifacts\datasets\coughvid\prepared\manifest.csv
+```
+
+### Optional TBscreen research tooling
+
+`tb_triage_classifier.json` is deliberately absent until an independently
+authorized, consented TBscreen cohort has been processed. The current endpoint
+returns a concern band only when the optional versioned
+`tb_triage_research_only` artifact passes validation; it exposes no probability,
+embedding, raw score, or raw audio. Missing or invalid artifacts leave the
+cough-presence response unchanged.
+
+The external archive is
+`https://dataset.cs.washington.edu/shwetak/TBscreen_Dataset.zip`. Its public code
+licence does not itself authorize processing cohort audio. Independently accept
+the data terms before setting `TBSCREEN_DATA_TERMS_CONFIRMED=yes`. Inspect the
+metadata and approve a local selection before extraction. Use only consented
+forced-cough recordings, never passive recordings, non-consented material, or
+CoughVID for TB training. The range reader does not download the whole archive,
+enforces a 1 GiB cache ceiling, deletes temporary audio immediately, and stores
+embeddings, labels, participant IDs, and approved shared metadata only under
+`.artifacts/tb-triage`. The application never starts a training-data download.
+
+```powershell
+.artifacts\hear-venv\Scripts\python hear-service\extract_tb_triage_embeddings.py .artifacts\tb-triage\approved_selection.jsonl
+.artifacts\hear-venv\Scripts\python hear-service\train_tb_triage.py .artifacts\tb-triage\consented_embeddings.npz
+```
+
+Training requires the five transient app inputs and 512 HeAR features, uses
+participant-disjoint splits, class weighting, validation calibration, and a
+versioned model-card payload. Bangladesh external-validation limitations remain
+mandatory. The signal cannot diagnose, rule out illness, or change fixed safety
+rules.
 
 ## Step 64 — Replace the demo acoustic value and, only with authorised data, add a triage score
 

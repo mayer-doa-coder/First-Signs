@@ -10,9 +10,8 @@ import { distanceKm, type Coordinates, type RankedCentre, type TbCentre } from "
 
 /**
  * Free, key-free OpenStreetMap-based vector tiles (no registration, no usage
- * limit) — see https://tiles.openfreemap.org/. AGENTS.md forbids hard-coded
- * API keys, so this and the OSRM demo router below are deliberately chosen
- * because they need none.
+ * limit) — see https://tiles.openfreemap.org/. This provider and the OSRM
+ * demo router below require no API keys.
  */
 const MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/positron";
 
